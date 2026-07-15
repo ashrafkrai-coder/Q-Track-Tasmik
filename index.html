@@ -119,6 +119,7 @@
         });
 
         // Logik NFC
+        let isScanning = false;
         async function startNFC() {
             const mulaBtn = document.getElementById('mulaBtn');
             const nfcText = document.getElementById('nfcText');
@@ -129,7 +130,9 @@
                 return;
             }
 
+            if (isScanning) return; // elak scan berganda
             try {
+                isScanning = true;
                 const ndef = new NDEFReader();
                 await ndef.scan();
                 nfcText.innerText = "Sila TAP kad NFC...";
@@ -147,13 +150,18 @@
                     nfcZone.innerHTML = "<p class='text-red-600'>❌ Ralat NFC: " + err + "</p>";
                 };
             } catch (err) {
-                nfcZone.innerHTML = "<p class='text-red-600'>❌ Gagal mula scan: " + err.message + "<br>Sila tekan 'MULA SCAN NFC'.</p>";
+                isScanning = false;
+                const msg = (err && err.message) ? err.message : String(err);
+                if (/denied/i.test(msg)) {
+                    nfcZone.innerHTML = "<p class='text-red-600'>❌ Kebenaran NFC <b>DITOLAK</b>.<br><br>Buka Chrome → ⋮ → <b>Settings → Site settings → NFC</b> → bagi <b>Allow</b> untuk laman ini, kemudian MUAT SEMULA.</p>";
+                } else {
+                    nfcZone.innerHTML = "<p class='text-red-600'>❌ Gagal mula scan: " + msg + "</p>";
+                }
             }
         }
 
-        // Auto-cuba (desktop/debug); di HP, tekan butang untuk dapat user activation
+        // Mula scan HANYA bila butang ditekan (perlu user activation + kebenaran)
         document.getElementById('mulaBtn').addEventListener('click', startNFC);
-        startNFC();
     </script>
 </body>
 </html>
