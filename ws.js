@@ -1,6 +1,6 @@
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open('qtrack-store').then((cache) => {
+    caches.open('qtrack-store-v2').then((cache) => {
       return cache.addAll(['index.html', 'manifest.json', 'icon-192.png', 'icon-512.png']);
     })
   );

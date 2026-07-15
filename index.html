@@ -12,12 +12,22 @@
 <body class="bg-slate-100 min-h-screen p-4">
     <div class="max-w-sm mx-auto bg-white p-6 rounded-3xl shadow-2xl">
         <h2 class="text-2xl font-bold mb-6 text-center text-slate-800">Q-Track Tasmik</h2>
-        
-        <select id="namaMurid" class="w-full p-3 mb-4 bg-slate-50 border rounded-xl">
-            <option>Ahmad Bin Ali</option>
-            <option>Siti Binti Abu</option>
+
+        <label class="block text-sm font-semibold text-slate-600 mb-1">Nama Murid:</label>
+        <select id="namaMurid" class="w-full p-2 text-sm mb-3 bg-slate-50 border rounded-xl">
+            <option value="">-- Pilih Murid --</option>
         </select>
 
+        <div id="infoMurid" class="text-sm text-blue-700 mb-4 font-bold bg-blue-50 p-3 rounded-xl border border-blue-200">
+            Ayat terakhir: -
+        </div>
+
+        <label class="block text-sm font-semibold text-slate-600 mb-1">Ayat Hafazan:</label>
+        <select id="ayat" class="w-full p-3 mb-4 bg-slate-50 border rounded-xl">
+            <option value="">-- Pilih Ayat --</option>
+        </select>
+
+        <label class="block text-sm font-semibold text-slate-600 mb-1">Status:</label>
         <select id="status" class="w-full p-3 mb-6 bg-slate-50 border rounded-xl">
             <option>Lancar</option>
             <option>Perlu Ulang</option>
@@ -30,7 +40,6 @@
         </div>
 
         <button id="submitBtn" disabled class="w-full mt-6 p-4 rounded-xl bg-blue-600 text-white font-bold disabled:opacity-30">HANTAR REKOD</button>
-
         <button id="daftarBtn" disabled class="w-full mt-3 p-4 rounded-xl bg-emerald-600 text-white font-bold disabled:opacity-30">DAFTAR KAD NFC</button>
     </div>
 
@@ -45,20 +54,48 @@
         const daftarBtn = document.getElementById('daftarBtn');
         const nfcZone = document.getElementById('nfcZone');
         let kadNfc = "";
+        let dataMuridFull = [];
 
+        // SENARAI AYAT TETAP — GANTI dengan senarai sebenar anda
+        const AYAT_LIST = [
+            "Ayat 1","Ayat 2","Ayat 3","Ayat 4","Ayat 5",
+            "Ayat 6","Ayat 7","Ayat 8","Ayat 9","Ayat 10",
+            "Ayat 11","Ayat 12","Ayat 13","Ayat 14","Ayat 15",
+            "Ayat 16","Ayat 17","Ayat 18","Ayat 19","Ayat 20",
+            "Ayat 21","Ayat 22","Ayat 23","Ayat 24","Ayat 25",
+            "Ayat 26","Ayat 27","Ayat 28","Ayat 29","Ayat 30"
+        ];
+        function loadAyat() {
+            const sel = document.getElementById('ayat');
+            AYAT_LIST.forEach((a) => {
+                const o = document.createElement('option');
+                o.value = a; o.textContent = a;
+                sel.appendChild(o);
+            });
+        }
+        loadAyat();
+
+        // Load senarai murid (simpan data penuh untuk lastAyat)
         async function loadStudents() {
             const select = document.getElementById('namaMurid');
             try {
                 const res = await fetch(ENDPOINT, { method: "GET" });
                 const data = await res.json();
-                const names = data.nama || [];
-                select.innerHTML = "";
+                let murid = [];
+                if (Array.isArray(data.murid)) {
+                    murid = data.murid;
+                } else if (Array.isArray(data.nama)) {
+                    murid = data.nama.map((n) => ({ nama: n }));
+                }
+                dataMuridFull = murid;
+                const names = [...new Set(murid.map((m) => m.nama).filter(Boolean))];
+                select.innerHTML = "<option value=''>-- Pilih Murid --</option>";
                 if (names.length === 0) {
                     select.innerHTML = "<option>-- Tiada rekod --</option>";
                     return;
                 }
                 names.forEach((n) => {
-                    const opt = document.createElement("option");
+                    const opt = document.createElement('option');
                     opt.value = n; opt.textContent = n;
                     select.appendChild(opt);
                 });
@@ -68,16 +105,51 @@
         }
         loadStudents();
 
+        // Papar ayat terakhir bila nama dipilih
+        document.getElementById('namaMurid').addEventListener('change', (e) => {
+            const info = dataMuridFull.find((m) => m.nama === e.target.value);
+            document.getElementById('infoMurid').innerText =
+                info ? "Ayat terakhir: " + (info.lastAyat || "-") : "Ayat terakhir: -";
+        });
+
+        // Hantar rekod
+        submitBtn.addEventListener('click', async () => {
+            const nama = document.getElementById('namaMurid').value;
+            const ayat = document.getElementById('ayat').value;
+            if (!nama) { nfcZone.innerHTML = "<p class='text-red-600'>Sila pilih murid</p>"; return; }
+            if (!ayat) { nfcZone.innerHTML = "<p class='text-red-600'>Sila pilih ayat</p>"; return; }
+
+            const data = new URLSearchParams({
+                nama: nama,
+                ayat: ayat,
+                status: document.getElementById('status').value,
+                masa: new Date().toLocaleString('ms-MY'),
+                nfc: kadNfc
+            });
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = "MENGHANTAR...";
+            try {
+                const res = await fetch(ENDPOINT, { method: "POST", body: data });
+                if (!res.ok) throw new Error("Server: " + res.status);
+                nfcZone.innerHTML = "<p class='text-green-600 font-bold'>✅ REKOD DIHANTAR</p>";
+            } catch (err) {
+                nfcZone.innerHTML = "<p class='text-red-600 font-bold'>❌ GAGAL: " + err.message + "</p>";
+                submitBtn.disabled = false;
+            } finally {
+                submitBtn.innerText = "HANTAR REKOD";
+            }
+        });
+
+        // Daftar kad
         daftarBtn.addEventListener('click', async () => {
             const data = new URLSearchParams({
                 aksi: "daftar",
                 nama: document.getElementById('namaMurid').value,
                 nfc: kadNfc
             });
-
             daftarBtn.disabled = true;
             daftarBtn.innerText = "MENDAFTAR...";
-
             try {
                 const res = await fetch(ENDPOINT, { method: "POST", body: data });
                 const msg = (await res.text()).trim();
@@ -91,61 +163,28 @@
             }
         });
 
-        submitBtn.addEventListener('click', async () => {
-            const data = new URLSearchParams({
-                nama: document.getElementById('namaMurid').value,
-                status: document.getElementById('status').value,
-                masa: new Date().toLocaleString('ms-MY'),
-                nfc: kadNfc
-            });
-
-            submitBtn.disabled = true;
-            submitBtn.innerText = "MENGHANTAR...";
-
-            try {
-                const res = await fetch(ENDPOINT, {
-                    method: "POST",
-                    body: data
-                });
-                if (!res.ok) throw new Error("Server: " + res.status);
-                nfcZone.innerHTML = "<p class='text-green-600 font-bold'>✅ REKOD DIHANTAR</p>";
-                submitBtn.disabled = true;
-            } catch (err) {
-                nfcZone.innerHTML = "<p class='text-red-600 font-bold'>❌ GAGAL: " + err.message + "</p>";
-                submitBtn.disabled = false;
-            } finally {
-                submitBtn.innerText = "HANTAR REKOD";
-            }
-        });
-
-        // Logik NFC
+        // NFC
         let isScanning = false;
         async function startNFC() {
-            const mulaBtn = document.getElementById('mulaBtn');
-            const nfcText = document.getElementById('nfcText');
-
             if (!("NDEFReader" in window)) {
                 nfcZone.innerHTML = "<p class='text-red-600'>⚠️ Peranti/penyemak imbas tidak sokong Web NFC<br>(perlu Android + Chrome)</p>";
-                if (mulaBtn) mulaBtn.style.display = "none";
+                document.getElementById('mulaBtn').style.display = "none";
                 return;
             }
-
-            if (isScanning) return; // elak scan berganda
+            if (isScanning) return;
             try {
                 isScanning = true;
                 const ndef = new NDEFReader();
                 await ndef.scan();
-                nfcText.innerText = "Sila TAP kad NFC...";
-                if (mulaBtn) mulaBtn.style.display = "none";
-
+                document.getElementById('nfcText').innerText = "Sila TAP kad NFC...";
+                document.getElementById('mulaBtn').style.display = "none";
                 ndef.onreading = (event) => {
                     kadNfc = event.serialNumber || "-";
-                    nfcText.innerText = "✅ KAD DISAHKAN (" + kadNfc + ")";
+                    document.getElementById('nfcText').innerText = "✅ KAD DISAHKAN (" + kadNfc + ")";
                     nfcZone.classList.replace('border-slate-300', 'border-green-500');
                     submitBtn.disabled = false;
                     daftarBtn.disabled = false;
                 };
-
                 ndef.onerror = (err) => {
                     nfcZone.innerHTML = "<p class='text-red-600'>❌ Ralat NFC: " + err + "</p>";
                 };
@@ -153,14 +192,12 @@
                 isScanning = false;
                 const msg = (err && err.message) ? err.message : String(err);
                 if (/denied/i.test(msg)) {
-                    nfcZone.innerHTML = "<p class='text-red-600'>❌ Kebenaran NFC <b>DITOLAK</b>.<br><br>Buka Chrome → ⋮ → <b>Settings → Site settings → NFC</b> → bagi <b>Allow</b> untuk laman ini, kemudian MUAT SEMULA.</p>";
+                    nfcZone.innerHTML = "<p class='text-red-600'>❌ Kebenaran NFC <b>DITOLAK</b>.<br>Chrome → ⋮ → Settings → Site settings → NFC → Allow, kemudian muat semula.</p>";
                 } else {
                     nfcZone.innerHTML = "<p class='text-red-600'>❌ Gagal mula scan: " + msg + "</p>";
                 }
             }
         }
-
-        // Mula scan HANYA bila butang ditekan (perlu user activation + kebenaran)
         document.getElementById('mulaBtn').addEventListener('click', startNFC);
     </script>
 </body>
