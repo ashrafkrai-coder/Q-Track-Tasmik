@@ -88,7 +88,7 @@
       display: flex; align-items: center;
       padding: 0 16px;
       border-bottom: 1px solid var(--grey-200);
-      min-height: 52px;
+      min-height: 42px;
     }
     .select-row:last-child { border-bottom: none; }
     .select-label {
@@ -99,11 +99,12 @@
     .select-wrap select {
       width: 100%; border: none; outline: none;
       background: transparent;
-      font-size: 15px; color: var(--emerald);
+      font-size: 13px; color: var(--emerald);
       font-weight: 600; font-family: inherit;
-      padding: 14px 28px 14px 0;
+      padding: 10px 28px 10px 0;
       appearance: none; -webkit-appearance: none;
       cursor: pointer;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .select-wrap::after {
       content: '›';
@@ -313,6 +314,37 @@
       padding: 4px 0 8px;
       letter-spacing: .03em;
     }
+
+    /* ── REGISTER LINK & TALLY ── */
+    .btn-link {
+      display: block; width: 100%;
+      background: var(--grey-100);
+      color: var(--emerald);
+      border: 1px solid var(--grey-200);
+      border-radius: var(--radius-pill);
+      padding: 12px; font-size: 14px; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+    }
+    .btn-link:active { opacity: .8; }
+    .nfc-hint {
+      font-size: 12px; color: var(--grey-600);
+      margin-top: 8px; font-weight: 600;
+    }
+    .nfc-hint.ok   { color: #1B7A3A; }
+    .nfc-hint.warn { color: #C0271F; }
+    .tally-card .card-body { padding: 8px 16px; }
+    .tally-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid var(--grey-200);
+    }
+    .tally-row:last-child { border-bottom: none; }
+    .reg-field select {
+      width: 100%; border: 1.5px solid var(--grey-200);
+      border-radius: 12px; padding: 13px 14px;
+      font-size: 15px; font-family: inherit; outline: none;
+      background: var(--white); color: var(--emerald); font-weight: 600;
+      margin-bottom: 14px;
+    }
   </style>
 </head>
 <body>
@@ -411,8 +443,11 @@
       </div>
       <p class="nfc-label" id="nfc-label">Tap untuk Scan NFC</p>
       <p class="nfc-sub" id="nfc-sub">Dekatkan kad murid ke telefon</p>
+      <p class="nfc-hint" id="nfc-hint" style="display:none;"></p>
     </div>
   </div>
+
+  <button class="btn-link" onclick="openRegister()">🪪 Daftar / Semak Kad Murid</button>
 
   <!-- Hantar -->
   <button class="btn-hantar" id="btn-hantar" disabled onclick="hantarRekod()">
@@ -427,6 +462,13 @@
     </div>
   </div>
 
+  <!-- Tally -->
+  <div class="card tally-card">
+    <div class="card-header">Senarai Kad &amp; Tally</div>
+    <div class="card-body" id="tally-list">
+      <div class="last-empty">Tiada pemetaan / rekod</div>
+    </div>
+  </div>
 
 
 </div><!-- end scroll-body -->
@@ -455,6 +497,29 @@
   </div>
 </div>
 
+<!-- Register Card Sheet -->
+<div class="overlay" id="reg-overlay" onclick="closeRegOutside(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>🪪 Daftar Kad Murid</h2>
+    <div class="field reg-field">
+      <label>Nama Murid</label>
+      <select id="reg-murid"></select>
+    </div>
+    <div class="field">
+      <label>UID Kad (auto dari scan / taip)</label>
+      <input id="reg-uid" type="text" placeholder="Tap kad di bawah…" />
+    </div>
+    <div class="nfc-ring" id="reg-ring" onclick="scanRegisterNFC()" style="margin:0 auto 16px; width:84px; height:84px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 7a9 9 0 0 1 0 10M17 9.5a5 5 0 0 1 0 5M4 7a9 9 0 0 0 0 10M7 9.5a5 5 0 0 0 0 5"/>
+        <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+      </svg>
+    </div>
+    <button class="btn-save" onclick="saveRegister()">Simpan Pemetaan</button>
+  </div>
+</div>
+
 <script>
   // ── STATE ──
   let statusPilih = '';
@@ -473,6 +538,12 @@
 
   let config = Object.assign({}, DEFAULT_CONFIG, JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}'));
 
+  // ── STUDENT ↔ UID MAPPING (localStorage) ──
+  const STUDENTS_KEY = 'hafazan_students';
+  let students = JSON.parse(localStorage.getItem(STUDENTS_KEY) || '[]');
+  function studentByUID(uid){ return students.find(s => s.nfc_uid && s.nfc_uid === uid); }
+  function studentByName(n){ return students.find(s => s.nama_murid === n); }
+
   // ── STATUS PILLS ──
   function pilihStatus(el) {
     document.querySelectorAll('.pill').forEach(p => p.className = 'pill');
@@ -490,8 +561,26 @@
     document.getElementById('btn-hantar').disabled = !ok;
   }
 
-  document.getElementById('sel-murid').addEventListener('change', checkReady);
+  document.getElementById('sel-murid').addEventListener('change', onMuridChange);
   document.getElementById('sel-ayat').addEventListener('change', checkReady);
+
+  function onMuridChange() {
+    checkReady();
+    const n = document.getElementById('sel-murid').value;
+    const hint = document.getElementById('nfc-hint');
+    const s = studentByName(n);
+    if (n && s && s.nfc_uid) {
+      hint.textContent = 'Kad berdaftar: ' + s.nfc_uid;
+      hint.className = 'nfc-hint ok';
+      hint.style.display = 'block';
+    } else if (n) {
+      hint.textContent = 'Kad murid ini belum didaftarkan';
+      hint.className = 'nfc-hint warn';
+      hint.style.display = 'block';
+    } else {
+      hint.style.display = 'none';
+    }
+  }
 
   // ── NFC SCAN ──
   async function scanNFC() {
@@ -557,8 +646,31 @@
     label.textContent = 'Kad Disahkan ✓';
     sub.textContent   = 'UID: ' + nfcUID;
     nfcVerified = true;
+    resolveCard();
     checkReady();
     showToast('Kad murid berjaya disahkan');
+  }
+
+  function setMurid(n) {
+    const sel = document.getElementById('sel-murid');
+    sel.value = n;
+    sel.dispatchEvent(new Event('change'));
+  }
+
+  function resolveCard() {
+    const match = studentByUID(nfcUID);
+    const sel = document.getElementById('sel-murid').value;
+    const sub = document.getElementById('nfc-sub');
+    if (match) {
+      // Kad dikenali -> auto-pilih nama (tap dulu)
+      if (!sel || sel !== match.nama_murid) setMurid(match.nama_murid);
+      sub.textContent = 'UID: ' + nfcUID + ' · ' + match.nama_murid;
+    } else if (sel) {
+      // Pilih nama dulu -> kad belum didaftar
+      sub.textContent = 'UID: ' + nfcUID + ' (belum didaftar utk ' + sel + ')';
+    } else {
+      sub.textContent = 'UID: ' + nfcUID + ' (kad tak dikenali)';
+    }
   }
 
   function nfcError(ring, label, sub) {
@@ -590,6 +702,14 @@
     const btn    = document.getElementById('btn-hantar');
 
     if (!murid || !ayat || !statusPilih || !nfcVerified) return;
+
+    // Sahkan UID kad sepadan dengan murid dipilih (jika sudah didaftar)
+    const stu = studentByName(murid);
+    if (stu && stu.nfc_uid && stu.nfc_uid !== nfcUID) {
+      showToast('⚠️ UID kad tak sepadan dgn ' + murid);
+      btn.disabled = false;
+      return;
+    }
 
     const rekod = {
       nama_murid: murid,
@@ -633,6 +753,7 @@
     }
 
     loadLastRecords();
+    renderTally();
     resetForm();
     btn.textContent = 'Hantar Rekod';
   }
@@ -716,8 +837,90 @@
     showToast('✅ Tetapan disimpan');
   }
 
+  // ── DAFTAR KAD (UID ↔ NAMA) ──
+  function openRegister() {
+    const src = document.getElementById('sel-murid');
+    const dst = document.getElementById('reg-murid');
+    dst.innerHTML = '<option value="">— Pilih Murid —</option>' +
+      [...src.options].filter(o => o.value).map(o => `<option>${o.value}</option>`).join('');
+    document.getElementById('reg-uid').value = '';
+    document.getElementById('reg-ring').className = 'nfc-ring';
+    document.getElementById('reg-overlay').classList.add('show');
+  }
+
+  function closeRegOutside(e) {
+    if (e.target === document.getElementById('reg-overlay'))
+      document.getElementById('reg-overlay').classList.remove('show');
+  }
+
+  async function scanRegisterNFC() {
+    const ring = document.getElementById('reg-ring');
+    const inp  = document.getElementById('reg-uid');
+    ring.className = 'nfc-ring scanning';
+    const fill = (uid) => { inp.value = uid; ring.className = 'nfc-ring success'; };
+    try {
+      if ('NDEFReader' in window) {
+        const reader = new NDEFReader();
+        await reader.scan();
+        reader.addEventListener('reading', ({ serialNumber }) => fill(serialNumber || 'UID-' + Date.now()));
+        reader.addEventListener('readingerror', () => { ring.className = 'nfc-ring'; showToast('Gagal scan kad'); });
+        setTimeout(() => { if (!inp.value) ring.className = 'nfc-ring'; }, 15000);
+      } else {
+        throw new Error('no-nfc');
+      }
+    } catch (e) {
+      setTimeout(() => fill('DEMO-' + Math.random().toString(36).substr(2,8).toUpperCase()), 1500);
+    }
+  }
+
+  function saveRegister() {
+    const nama = document.getElementById('reg-murid').value;
+    const uid  = document.getElementById('reg-uid').value.trim();
+    if (!nama || !uid) { showToast('⚠️ Pilih murid & scan kad dulu'); return; }
+    const idx = students.findIndex(s => s.nama_murid === nama);
+    if (idx >= 0) students[idx].nfc_uid = uid;
+    else students.push({ nama_murid: nama, nfc_uid: uid });
+    localStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
+    document.getElementById('reg-overlay').classList.remove('show');
+    renderTally();
+    showToast('✅ ' + nama + ' ↔ ' + uid);
+  }
+
+  // ── TALLY (kumpul rekod mengikut UID) ──
+  function renderTally() {
+    const el = document.getElementById('tally-list');
+    if (!el) return;
+    const records = JSON.parse(localStorage.getItem('hafazan_records') || '[]');
+    const cnt = {};
+    records.forEach(r => { if (r.nfc_uid) cnt[r.nfc_uid] = (cnt[r.nfc_uid] || 0) + 1; });
+
+    if (!students.length && !Object.keys(cnt).length) {
+      el.innerHTML = '<div class="last-empty">Tiada pemetaan / rekod</div>';
+      return;
+    }
+
+    const mapped = new Set(students.map(s => s.nfc_uid));
+    let html = '';
+    students.forEach(s => {
+      const c = s.nfc_uid ? (cnt[s.nfc_uid] || 0) : 0;
+      const cls = s.nfc_uid ? 'badge-lancar' : 'badge-bimbingan';
+      html += `<div class="tally-row">
+        <div class="last-info"><div class="last-name">${s.nama_murid}</div><div class="last-meta">${s.nfc_uid || 'tiada kad'}</div></div>
+        <span class="badge ${cls}">${c} rekod</span></div>`;
+    });
+    Object.keys(cnt).forEach(uid => {
+      if (uid && !mapped.has(uid)) {
+        html += `<div class="tally-row">
+          <div class="last-info"><div class="last-name">❓ Kad tak dikenali</div><div class="last-meta">${uid}</div></div>
+          <span class="badge badge-bimbingan">${cnt[uid]} rekod</span></div>`;
+      }
+    });
+    el.innerHTML = html;
+  }
+
   // ── INIT ──
   loadLastRecords();
+  renderTally();
 
   // Register SW
   if ('serviceWorker' in navigator) {
