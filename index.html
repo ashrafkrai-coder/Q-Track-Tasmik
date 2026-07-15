@@ -1,204 +1,728 @@
 <!DOCTYPE html>
 <html lang="ms">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Q-Track Tasmik</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-    <link rel="apple-touch-icon" href="icon-512.png">
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#1A3A2E" />
+  <title>Hafazan Tracker</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --emerald:    #1A3A2E;
+      --emerald-mid:#25503E;
+      --gold:       #D4A843;
+      --gold-light: #F0CC78;
+      --cream:      #F8F5EE;
+      --white:      #FFFFFF;
+      --grey-100:   #F2F2F7;
+      --grey-200:   #E5E5EA;
+      --grey-400:   #AEAEB2;
+      --grey-600:   #636366;
+      --grey-900:   #1C1C1E;
+      --red:        #FF3B30;
+      --green:      #34C759;
+      --radius-card:18px;
+      --radius-pill:100px;
+      --shadow:     0 4px 24px rgba(0,0,0,.10);
+      --shadow-lg:  0 12px 40px rgba(0,0,0,.16);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--cream);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      color: var(--grey-900);
+      overflow-x: hidden;
+    }
+
+    /* ── STATUS BAR SPACER ── */
+    .safe-top { height: env(safe-area-inset-top, 44px); background: var(--emerald); }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--emerald);
+      padding: 14px 20px 18px;
+      position: sticky;
+      top: 0; z-index: 100;
+    }
+    .header-eyebrow {
+      font-size: 11px; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--gold-light);
+      font-weight: 600; margin-bottom: 2px;
+    }
+    .header-title {
+      font-size: 26px; font-weight: 700;
+      color: var(--white); letter-spacing: -.4px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .header-title span { font-size: 22px; }
+
+    /* ── SCROLL BODY ── */
+    .scroll-body {
+      padding: 20px 16px calc(env(safe-area-inset-bottom,24px) + 24px);
+      display: flex; flex-direction: column; gap: 14px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card-header {
+      background: var(--grey-100);
+      padding: 10px 16px;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase;
+      color: var(--grey-600);
+      border-bottom: 1px solid var(--grey-200);
+    }
+
+    /* ── SELECT ROW ── */
+    .select-row {
+      display: flex; align-items: center;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--grey-200);
+      min-height: 52px;
+    }
+    .select-row:last-child { border-bottom: none; }
+    .select-label {
+      font-size: 15px; font-weight: 500;
+      color: var(--grey-900); flex: 0 0 110px;
+    }
+    .select-wrap { flex: 1; position: relative; }
+    .select-wrap select {
+      width: 100%; border: none; outline: none;
+      background: transparent;
+      font-size: 15px; color: var(--emerald);
+      font-weight: 600; font-family: inherit;
+      padding: 14px 28px 14px 0;
+      appearance: none; -webkit-appearance: none;
+      cursor: pointer;
+    }
+    .select-wrap::after {
+      content: '›';
+      position: absolute; right: 0; top: 50%;
+      transform: translateY(-50%) rotate(90deg);
+      color: var(--grey-400); font-size: 18px;
+      pointer-events: none;
+    }
+
+    /* ── STATUS PILLS ── */
+    .status-card .card-body { padding: 14px 16px; }
+    .status-pills {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .pill {
+      flex: 1; min-width: 80px;
+      border: 1.5px solid var(--grey-200);
+      border-radius: var(--radius-pill);
+      padding: 10px 6px;
+      text-align: center;
+      font-size: 13px; font-weight: 600;
+      color: var(--grey-600);
+      cursor: pointer; transition: all .18s ease;
+      background: var(--white);
+    }
+    .pill.active-lancar   { background: #E8F8ED; border-color: var(--green);  color: #1B7A3A; }
+    .pill.active-ulang    { background: #FFF6E0; border-color: var(--gold);   color: #8A6200; }
+    .pill.active-bimbingan{ background: #FFEEED; border-color: var(--red);    color: #C0271F; }
+
+    /* ── NFC SECTION ── */
+    .nfc-card { text-align: center; }
+    .nfc-card .card-body { padding: 28px 20px; }
+    .nfc-ring {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      background: var(--grey-100);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+      position: relative;
+      cursor: pointer;
+      transition: transform .15s ease;
+    }
+    .nfc-ring:active { transform: scale(.94); }
+    .nfc-ring svg { width: 48px; height: 48px; color: var(--emerald); }
+
+    /* Ripple rings */
+    .nfc-ring::before, .nfc-ring::after {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: 50%;
+      border: 2px solid var(--emerald);
+      opacity: 0;
+      transform: scale(1);
+    }
+    .nfc-ring.scanning::before {
+      animation: ripple 1.4s ease-out infinite;
+    }
+    .nfc-ring.scanning::after {
+      animation: ripple 1.4s ease-out .5s infinite;
+    }
+    .nfc-ring.scanning {
+      background: #E4F0EB;
+    }
+    .nfc-ring.scanning svg { color: var(--emerald); }
+    .nfc-ring.success {
+      background: #E8F8ED;
+      animation: none;
+    }
+    .nfc-ring.success svg { color: var(--green); }
+
+    @keyframes ripple {
+      0%   { opacity: .5; transform: scale(1); }
+      100% { opacity: 0;  transform: scale(1.9); }
+    }
+
+    .nfc-label {
+      font-size: 16px; font-weight: 600; color: var(--grey-900);
+      margin-bottom: 4px;
+    }
+    .nfc-sub {
+      font-size: 13px; color: var(--grey-400);
+    }
+
+    /* ── HANTAR BTN ── */
+    .btn-hantar {
+      width: 100%;
+      background: var(--emerald);
+      color: var(--white);
+      font-size: 16px; font-weight: 700;
+      border: none; border-radius: var(--radius-pill);
+      padding: 17px;
+      cursor: pointer;
+      letter-spacing: .02em;
+      transition: opacity .15s, transform .1s;
+      margin-top: 4px;
+      font-family: inherit;
+    }
+    .btn-hantar:active { opacity: .85; transform: scale(.98); }
+    .btn-hantar:disabled { opacity: .38; cursor: not-allowed; }
+
+    /* ── LAST RECORD ── */
+    .last-card .card-body { padding: 16px; }
+    .last-empty {
+      text-align: center; padding: 24px 0;
+      color: var(--grey-400); font-size: 14px;
+    }
+    .last-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--grey-200);
+    }
+    .last-row:last-child { border-bottom: none; }
+    .last-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--emerald);
+      color: var(--white);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .last-info { flex: 1; }
+    .last-name { font-size: 15px; font-weight: 600; }
+    .last-meta { font-size: 12px; color: var(--grey-600); margin-top: 1px; }
+    .badge {
+      font-size: 11px; font-weight: 700;
+      padding: 3px 10px; border-radius: 20px;
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    .badge-lancar    { background: #E8F8ED; color: #1B7A3A; }
+    .badge-ulang     { background: #FFF6E0; color: #8A6200; }
+    .badge-bimbingan { background: #FFEEED; color: #C0271F; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: calc(env(safe-area-inset-bottom,24px) + 16px);
+      left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--grey-900); color: var(--white);
+      padding: 12px 22px; border-radius: 20px;
+      font-size: 14px; font-weight: 500;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s;
+      opacity: 0; z-index: 999; white-space: nowrap;
+      box-shadow: var(--shadow-lg);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* ── SUPABASE CONFIG MODAL ── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.45); z-index: 200;
+      display: flex; align-items: flex-end;
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s;
+    }
+    .overlay.show { opacity: 1; pointer-events: all; }
+    .sheet {
+      background: var(--white);
+      width: 100%; border-radius: 20px 20px 0 0;
+      padding: 12px 20px calc(env(safe-area-inset-bottom,24px) + 20px);
+      transform: translateY(100%);
+      transition: transform .3s cubic-bezier(.34,1.2,.64,1);
+    }
+    .overlay.show .sheet { transform: translateY(0); }
+    .sheet-handle {
+      width: 36px; height: 4px; border-radius: 2px;
+      background: var(--grey-200); margin: 0 auto 18px;
+    }
+    .sheet h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .field label {
+      font-size: 12px; font-weight: 600;
+      color: var(--grey-600); text-transform: uppercase;
+      letter-spacing: .06em; display: block; margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%; border: 1.5px solid var(--grey-200);
+      border-radius: 12px; padding: 13px 14px;
+      font-size: 15px; font-family: inherit;
+      outline: none; transition: border-color .15s;
+      margin-bottom: 14px;
+    }
+    .field input:focus { border-color: var(--emerald); }
+    .btn-save {
+      width: 100%; background: var(--emerald);
+      color: var(--white); border: none;
+      border-radius: var(--radius-pill);
+      padding: 15px; font-size: 15px; font-weight: 700;
+      font-family: inherit; cursor: pointer;
+    }
+
+    /* Settings icon */
+    .header-right {
+      position: absolute; right: 20px; top: 50%;
+      transform: translateY(-50%);
+    }
+    .btn-settings {
+      background: rgba(255,255,255,.15);
+      border: none; border-radius: 50%;
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--white);
+    }
+
+    /* Quran decoration */
+    .quran-deco {
+      text-align: center;
+      font-size: 13px; color: var(--grey-400);
+      padding: 4px 0 8px;
+      letter-spacing: .03em;
+    }
+  </style>
 </head>
-<body class="bg-slate-100 min-h-screen p-4">
-    <div class="max-w-sm mx-auto bg-white p-6 rounded-3xl shadow-2xl">
-        <h2 class="text-2xl font-bold mb-6 text-center text-slate-800">Q-Track Tasmik</h2>
+<body>
 
-        <label class="block text-sm font-semibold text-slate-600 mb-1">Nama Murid:</label>
-        <select id="namaMurid" class="w-full p-2 text-sm mb-3 bg-slate-50 border rounded-xl">
-            <option value="">-- Pilih Murid --</option>
+<div class="safe-top"></div>
+
+<header style="position:relative;">
+  <div class="header-eyebrow">Sistem Pemantauan</div>
+  <div class="header-title">
+    <span>📖</span> Hafazan Tracker
+  </div>
+  <div class="header-right">
+    <button class="btn-settings" onclick="openSettings()" aria-label="Tetapan">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<div class="scroll-body">
+
+  <!-- Borang -->
+  <div class="card">
+    <div class="card-header">Maklumat Murid</div>
+    <div class="select-row">
+      <span class="select-label">Nama Murid</span>
+      <div class="select-wrap">
+        <select id="sel-murid">
+          <option value="">— Pilih Murid —</option>
+          <option>A'INANUR NAJIHAH BINTI ABU BAKAR</option>
+          <option>AHMAD DANIAL ASYRAF BIN RAHMAT</option>
+          <option>ANNUR ARISSA BINTI SYAHRUL REZUAN</option>
+          <option>AQLAN HADIF BIN AHMAD YAZID</option>
+          <option>DAIM ELFAARUQ BIN DZUL HANIF</option>
+          <option>IZZUL IMAN BIN IZZUDDIN</option>
+          <option>MUHAMMAD ADAM DARWISH BIN MOHD SYUKRI</option>
+          <option>MUHAMMAD ADAM IRSYAD BIN HAFIZ</option>
+          <option>MUHAMMAD AIZAT MIRZA BIN SUHAIMI</option>
+          <option>MUHAMMAD AMSYAR ARIF BIN BADRI SHAH</option>
+          <option>MUHAMMAD AMSYAR HAZIQ BIN MOHAMMAD HAFIZ</option>
+          <option>MUHAMMAD ANNAS NAQIEM BIN DAERI</option>
+          <option>MUHAMMAD AZRIF BIN LATIF</option>
+          <option>MUHAMMAD FAIQ ZIKRY BIN MOHAMMAD FIRDAUS</option>
+          <option>NOOR ZAEFRYL AFZAN BIN NOOR ZARIMAN</option>
+          <option>NUR ADRIANA BINTI SASTRAVIJAYA</option>
+          <option>NUR ALYA FARHANA BINTI MOHD ZANI</option>
+          <option>NUR AMEENA IMAN BINTI CHAIRIL ANWAR</option>
+          <option>NUR FATIMAH BINTI ASOOR</option>
+          <option>NUR INSYIRAH AMANI BINTI ROSZAIDI</option>
+          <option>NUR QALESYA ZINNIRAH BINTI MOHD LAMHAT</option>
+          <option>NUR QASEH SOFEA BINTI MOHAMMAD NAZRI</option>
+          <option>NURUL AIN BINTI SULAIMAN</option>
+          <option>QHAIREEN HANA BINTI ABDUL QAYYUM</option>
+          <option>ZAHIRAH DAYANA BINTI KAMAL FIKRI</option>
         </select>
-
-        <div id="infoMurid" class="text-sm text-blue-700 mb-4 font-bold bg-blue-50 p-3 rounded-xl border border-blue-200">
-            Ayat terakhir: -
-        </div>
-
-        <label class="block text-sm font-semibold text-slate-600 mb-1">Ayat Hafazan:</label>
-        <select id="ayat" class="w-full p-3 mb-4 bg-slate-50 border rounded-xl">
-            <option value="">-- Pilih Ayat --</option>
-        </select>
-
-        <label class="block text-sm font-semibold text-slate-600 mb-1">Status:</label>
-        <select id="status" class="w-full p-3 mb-6 bg-slate-50 border rounded-xl">
-            <option>Lancar</option>
-            <option>Perlu Ulang</option>
-            <option>Bimbingan</option>
-        </select>
-
-        <div id="nfcZone" class="p-4 border-2 border-dashed border-slate-300 rounded-2xl text-center">
-            <p id="nfcText">Sila TAP Kad NFC</p>
-            <button id="mulaBtn" class="mt-3 px-4 py-2 rounded-xl bg-slate-800 text-white font-bold">MULA SCAN NFC</button>
-        </div>
-
-        <button id="submitBtn" disabled class="w-full mt-6 p-4 rounded-xl bg-blue-600 text-white font-bold disabled:opacity-30">HANTAR REKOD</button>
-        <button id="daftarBtn" disabled class="w-full mt-3 p-4 rounded-xl bg-emerald-600 text-white font-bold disabled:opacity-30">DAFTAR KAD NFC</button>
+      </div>
     </div>
+    <div class="select-row">
+      <span class="select-label">Ayat</span>
+      <div class="select-wrap">
+        <select id="sel-ayat">
+          <option value="">— Pilih Ayat —</option>
+          <option value="1-5">Ayat 1 – 5</option>
+          <option value="6-10">Ayat 6 – 10</option>
+          <option value="11-15">Ayat 11 – 15</option>
+          <option value="16-20">Ayat 16 – 20</option>
+          <option value="21-25">Ayat 21 – 25</option>
+          <option value="26-30">Ayat 26 – 30</option>
+        </select>
+      </div>
+    </div>
+  </div>
 
-    <script>
-        // Pendaftaran Service Worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('ws.js');
-        }
+  <!-- Status -->
+  <div class="card status-card">
+    <div class="card-header">Status Bacaan</div>
+    <div class="card-body">
+      <div class="status-pills">
+        <div class="pill" data-val="lancar" onclick="pilihStatus(this)">✅ Lancar</div>
+        <div class="pill" data-val="ulang" onclick="pilihStatus(this)">🔄 Ulang</div>
+        <div class="pill" data-val="bimbingan" onclick="pilihStatus(this)">📌 Bimbingan</div>
+      </div>
+    </div>
+  </div>
 
-        const ENDPOINT = "https://script.google.com/macros/s/AKfycbwX9O_EKK5r-roLdmLTmr0mYoCj-m4aJDDO7TMzBD9v025QDDDpgs4l7VYtM00UQ32Y/exec";
-        const submitBtn = document.getElementById('submitBtn');
-        const daftarBtn = document.getElementById('daftarBtn');
-        const nfcZone = document.getElementById('nfcZone');
-        let kadNfc = "";
-        let dataMuridFull = [];
+  <!-- NFC -->
+  <div class="card nfc-card">
+    <div class="card-header">Pengesahan Kad Murid (NFC)</div>
+    <div class="card-body">
+      <div class="nfc-ring" id="nfc-ring" onclick="scanNFC()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 7a9 9 0 0 1 0 10M17 9.5a5 5 0 0 1 0 5M4 7a9 9 0 0 0 0 10M7 9.5a5 5 0 0 0 0 5"/>
+          <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+        </svg>
+      </div>
+      <p class="nfc-label" id="nfc-label">Tap untuk Scan NFC</p>
+      <p class="nfc-sub" id="nfc-sub">Dekatkan kad murid ke telefon</p>
+    </div>
+  </div>
 
-        // SENARAI AYAT TETAP — GANTI dengan senarai sebenar anda
-        const AYAT_LIST = [
-            "Ayat 1","Ayat 2","Ayat 3","Ayat 4","Ayat 5",
-            "Ayat 6","Ayat 7","Ayat 8","Ayat 9","Ayat 10",
-            "Ayat 11","Ayat 12","Ayat 13","Ayat 14","Ayat 15",
-            "Ayat 16","Ayat 17","Ayat 18","Ayat 19","Ayat 20",
-            "Ayat 21","Ayat 22","Ayat 23","Ayat 24","Ayat 25",
-            "Ayat 26","Ayat 27","Ayat 28","Ayat 29","Ayat 30"
-        ];
-        function loadAyat() {
-            const sel = document.getElementById('ayat');
-            AYAT_LIST.forEach((a) => {
-                const o = document.createElement('option');
-                o.value = a; o.textContent = a;
-                sel.appendChild(o);
-            });
-        }
-        loadAyat();
+  <!-- Hantar -->
+  <button class="btn-hantar" id="btn-hantar" disabled onclick="hantarRekod()">
+    Hantar Rekod
+  </button>
 
-        // Load senarai murid (simpan data penuh untuk lastAyat)
-        async function loadStudents() {
-            const select = document.getElementById('namaMurid');
-            try {
-                const res = await fetch(ENDPOINT, { method: "GET" });
-                const data = await res.json();
-                let murid = [];
-                if (Array.isArray(data.murid)) {
-                    murid = data.murid;
-                } else if (Array.isArray(data.nama)) {
-                    murid = data.nama.map((n) => ({ nama: n }));
-                }
-                dataMuridFull = murid;
-                const names = [...new Set(murid.map((m) => m.nama).filter(Boolean))];
-                select.innerHTML = "<option value=''>-- Pilih Murid --</option>";
-                if (names.length === 0) {
-                    select.innerHTML = "<option>-- Tiada rekod --</option>";
-                    return;
-                }
-                names.forEach((n) => {
-                    const opt = document.createElement('option');
-                    opt.value = n; opt.textContent = n;
-                    select.appendChild(opt);
-                });
-            } catch (err) {
-                select.innerHTML = "<option>-- Gagal muat senarai --</option>";
-            }
-        }
-        loadStudents();
+  <!-- Rekod Terakhir -->
+  <div class="card last-card">
+    <div class="card-header">Rekod Ayat Terakhir</div>
+    <div class="card-body" id="last-records">
+      <div class="last-empty">Belum ada rekod dimuatkan</div>
+    </div>
+  </div>
 
-        // Papar ayat terakhir bila nama dipilih
-        document.getElementById('namaMurid').addEventListener('change', (e) => {
-            const info = dataMuridFull.find((m) => m.nama === e.target.value);
-            document.getElementById('infoMurid').innerText =
-                info ? "Ayat terakhir: " + (info.lastAyat || "-") : "Ayat terakhir: -";
+
+
+</div><!-- end scroll-body -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Settings Sheet -->
+<div class="overlay" id="overlay" onclick="closeSettingsOutside(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>⚙️ Tetapan Supabase</h2>
+    <div class="field">
+      <label>Supabase URL</label>
+      <input id="inp-url" type="url" placeholder="https://xxxx.supabase.co" />
+    </div>
+    <div class="field">
+      <label>Anon Key</label>
+      <input id="inp-key" type="password" placeholder="eyJhbGciOi..." />
+    </div>
+    <div class="field">
+      <label>Nama Jadual (Table)</label>
+      <input id="inp-table" type="text" placeholder="hafazan_records" value="hafazan_records" />
+    </div>
+    <button class="btn-save" onclick="saveSettings()">Simpan Tetapan</button>
+  </div>
+</div>
+
+<script>
+  // ── STATE ──
+  let statusPilih = '';
+  let nfcVerified = false;
+  let nfcUID = '';
+  let scanLock = false;
+
+  const CONFIG_KEY = 'hafazan_config';
+
+  // Default Supabase credentials (anon key is public by design)
+  const DEFAULT_CONFIG = {
+    url:   'https://ajhmwbuxtehkqoqlgqfc.supabase.co',
+    key:   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqaG13YnV4dGVoa3FvcWxncWZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMTI1MDksImV4cCI6MjA5OTY4ODUwOX0.KH31HCi4Vf0V1XTljb_XRCG8DHNs9veL-tJ_lOvbgAE',
+    table: 'hafazan_records'
+  };
+
+  let config = Object.assign({}, DEFAULT_CONFIG, JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}'));
+
+  // ── STATUS PILLS ──
+  function pilihStatus(el) {
+    document.querySelectorAll('.pill').forEach(p => p.className = 'pill');
+    const val = el.dataset.val;
+    el.classList.add('active-' + val);
+    statusPilih = val;
+    checkReady();
+  }
+
+  // ── FORM CHECK ──
+  function checkReady() {
+    const murid = document.getElementById('sel-murid').value;
+    const ayat  = document.getElementById('sel-ayat').value;
+    const ok = murid && ayat && statusPilih && nfcVerified;
+    document.getElementById('btn-hantar').disabled = !ok;
+  }
+
+  document.getElementById('sel-murid').addEventListener('change', checkReady);
+  document.getElementById('sel-ayat').addEventListener('change', checkReady);
+
+  // ── NFC SCAN ──
+  async function scanNFC() {
+    if (scanLock) return;
+    const ring  = document.getElementById('nfc-ring');
+    const label = document.getElementById('nfc-label');
+    const sub   = document.getElementById('nfc-sub');
+
+    // Try Web NFC API
+    if ('NDEFReader' in window) {
+      try {
+        scanLock = true;
+        ring.className = 'nfc-ring scanning';
+        label.textContent = 'Sedang mengimbas…';
+        sub.textContent   = 'Dekatkan kad murid sekarang';
+
+        const reader = new NDEFReader();
+        await reader.scan();
+        reader.addEventListener('reading', ({ serialNumber }) => {
+          nfcUID = serialNumber || 'UID-' + Date.now();
+          nfcSuccess(ring, label, sub);
+          scanLock = false;
+        });
+        reader.addEventListener('readingerror', () => {
+          nfcError(ring, label, sub);
+          scanLock = false;
         });
 
-        // Hantar rekod
-        submitBtn.addEventListener('click', async () => {
-            const nama = document.getElementById('namaMurid').value;
-            const ayat = document.getElementById('ayat').value;
-            if (!nama) { nfcZone.innerHTML = "<p class='text-red-600'>Sila pilih murid</p>"; return; }
-            if (!ayat) { nfcZone.innerHTML = "<p class='text-red-600'>Sila pilih ayat</p>"; return; }
+        // Timeout 15s
+        setTimeout(() => {
+          if (scanLock) {
+            nfcError(ring, label, sub);
+            scanLock = false;
+          }
+        }, 15000);
 
-            const data = new URLSearchParams({
-                nama: nama,
-                ayat: ayat,
-                status: document.getElementById('status').value,
-                masa: new Date().toLocaleString('ms-MY'),
-                nfc: kadNfc
-            });
+      } catch(e) {
+        // Fallback: simulate (dev mode)
+        simulateNFC(ring, label, sub);
+        scanLock = false;
+      }
+    } else {
+      // Browser does not support NFC → simulate for demo
+      simulateNFC(ring, label, sub);
+    }
+  }
 
-            submitBtn.disabled = true;
-            submitBtn.innerText = "MENGHANTAR...";
-            try {
-                const res = await fetch(ENDPOINT, { method: "POST", body: data });
-                if (!res.ok) throw new Error("Server: " + res.status);
-                nfcZone.innerHTML = "<p class='text-green-600 font-bold'>✅ REKOD DIHANTAR</p>";
-            } catch (err) {
-                nfcZone.innerHTML = "<p class='text-red-600 font-bold'>❌ GAGAL: " + err.message + "</p>";
-                submitBtn.disabled = false;
-            } finally {
-                submitBtn.innerText = "HANTAR REKOD";
-            }
+  function simulateNFC(ring, label, sub) {
+    scanLock = true;
+    ring.className = 'nfc-ring scanning';
+    label.textContent = 'Sedang mengimbas… (Demo)';
+    sub.textContent   = 'NFC tidak disokong — mod demo';
+    setTimeout(() => {
+      nfcUID = 'DEMO-' + Math.random().toString(36).substr(2,8).toUpperCase();
+      nfcSuccess(ring, label, sub);
+      scanLock = false;
+    }, 2200);
+  }
+
+  function nfcSuccess(ring, label, sub) {
+    ring.className = 'nfc-ring success';
+    ring.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    label.textContent = 'Kad Disahkan ✓';
+    sub.textContent   = 'UID: ' + nfcUID;
+    nfcVerified = true;
+    checkReady();
+    showToast('Kad murid berjaya disahkan');
+  }
+
+  function nfcError(ring, label, sub) {
+    ring.className = 'nfc-ring';
+    label.textContent = 'Gagal — Cuba Semula';
+    sub.textContent   = 'Dekatkan kad murid ke telefon';
+    nfcVerified = false;
+    checkReady();
+  }
+
+  function resetNFC() {
+    const ring  = document.getElementById('nfc-ring');
+    ring.className = 'nfc-ring';
+    ring.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 7a9 9 0 0 1 0 10M17 9.5a5 5 0 0 1 0 5M4 7a9 9 0 0 0 0 10M7 9.5a5 5 0 0 0 0 5"/>
+      <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+    </svg>`;
+    document.getElementById('nfc-label').textContent = 'Tap untuk Scan NFC';
+    document.getElementById('nfc-sub').textContent   = 'Dekatkan kad murid ke telefon';
+    nfcVerified = false;
+    nfcUID = '';
+    scanLock = false;
+  }
+
+  // ── HANTAR KE SUPABASE ──
+  async function hantarRekod() {
+    const murid  = document.getElementById('sel-murid').value;
+    const ayat   = document.getElementById('sel-ayat').value;
+    const btn    = document.getElementById('btn-hantar');
+
+    if (!murid || !ayat || !statusPilih || !nfcVerified) return;
+
+    const rekod = {
+      nama_murid: murid,
+      ayat: ayat,
+      status: statusPilih,
+      nfc_uid: nfcUID,
+      tarikh: new Date().toISOString()
+    };
+
+    btn.disabled = true;
+    btn.textContent = 'Menghantar…';
+
+    // Save locally always
+    saveLocalRecord(rekod);
+
+    // Try Supabase if configured
+    if (config.url && config.key) {
+      try {
+        const res = await fetch(`${config.url}/rest/v1/${config.table || 'hafazan_records'}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': config.key,
+            'Authorization': 'Bearer ' + config.key,
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify(rekod)
         });
 
-        // Daftar kad
-        daftarBtn.addEventListener('click', async () => {
-            const data = new URLSearchParams({
-                aksi: "daftar",
-                nama: document.getElementById('namaMurid').value,
-                nfc: kadNfc
-            });
-            daftarBtn.disabled = true;
-            daftarBtn.innerText = "MENDAFTAR...";
-            try {
-                const res = await fetch(ENDPOINT, { method: "POST", body: data });
-                const msg = (await res.text()).trim();
-                if (!res.ok) throw new Error("Server: " + res.status);
-                nfcZone.innerHTML = "<p class='text-emerald-600 font-bold'>✅ " + msg + "</p>";
-            } catch (err) {
-                nfcZone.innerHTML = "<p class='text-red-600 font-bold'>❌ GAGAL: " + err.message + "</p>";
-            } finally {
-                daftarBtn.innerText = "DAFTAR KAD NFC";
-                daftarBtn.disabled = false;
-            }
-        });
-
-        // NFC
-        let isScanning = false;
-        async function startNFC() {
-            if (!("NDEFReader" in window)) {
-                nfcZone.innerHTML = "<p class='text-red-600'>⚠️ Peranti/penyemak imbas tidak sokong Web NFC<br>(perlu Android + Chrome)</p>";
-                document.getElementById('mulaBtn').style.display = "none";
-                return;
-            }
-            if (isScanning) return;
-            try {
-                isScanning = true;
-                const ndef = new NDEFReader();
-                await ndef.scan();
-                document.getElementById('nfcText').innerText = "Sila TAP kad NFC...";
-                document.getElementById('mulaBtn').style.display = "none";
-                ndef.onreading = (event) => {
-                    kadNfc = event.serialNumber || "-";
-                    document.getElementById('nfcText').innerText = "✅ KAD DISAHKAN (" + kadNfc + ")";
-                    nfcZone.classList.replace('border-slate-300', 'border-green-500');
-                    submitBtn.disabled = false;
-                    daftarBtn.disabled = false;
-                };
-                ndef.onerror = (err) => {
-                    nfcZone.innerHTML = "<p class='text-red-600'>❌ Ralat NFC: " + err + "</p>";
-                };
-            } catch (err) {
-                isScanning = false;
-                const msg = (err && err.message) ? err.message : String(err);
-                if (/denied/i.test(msg)) {
-                    nfcZone.innerHTML = "<p class='text-red-600'>❌ Kebenaran NFC <b>DITOLAK</b>.<br>Chrome → ⋮ → Settings → Site settings → NFC → Allow, kemudian muat semula.</p>";
-                } else {
-                    nfcZone.innerHTML = "<p class='text-red-600'>❌ Gagal mula scan: " + msg + "</p>";
-                }
-            }
+        if (res.ok) {
+          showToast('✅ Rekod berjaya dihantar ke Supabase');
+        } else {
+          const err = await res.json();
+          showToast('⚠️ Supabase: ' + (err.message || 'Ralat tidak diketahui'));
         }
-        document.getElementById('mulaBtn').addEventListener('click', startNFC);
-    </script>
+      } catch(e) {
+        showToast('📱 Disimpan tempatan (tiada sambungan)');
+      }
+    } else {
+      showToast('📋 Rekod disimpan (Supabase belum dikonfigurasi)');
+    }
+
+    loadLastRecords();
+    resetForm();
+    btn.textContent = 'Hantar Rekod';
+  }
+
+  function resetForm() {
+    document.getElementById('sel-murid').value = '';
+    document.getElementById('sel-ayat').value  = '';
+    document.querySelectorAll('.pill').forEach(p => p.className = 'pill');
+    statusPilih = '';
+    resetNFC();
+    document.getElementById('btn-hantar').disabled = true;
+  }
+
+  // ── LOCAL STORAGE RECORDS ──
+  function saveLocalRecord(rekod) {
+    let records = JSON.parse(localStorage.getItem('hafazan_records') || '[]');
+    records.unshift(rekod);
+    if (records.length > 50) records = records.slice(0, 50);
+    localStorage.setItem('hafazan_records', JSON.stringify(records));
+  }
+
+  function loadLastRecords() {
+    const records = JSON.parse(localStorage.getItem('hafazan_records') || '[]');
+    const container = document.getElementById('last-records');
+
+    if (!records.length) {
+      container.innerHTML = '<div class="last-empty">Belum ada rekod dimuatkan</div>';
+      return;
+    }
+
+    // Show last 5
+    const html = records.slice(0, 5).map(r => {
+      const inisial = r.nama_murid ? r.nama_murid.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) : '??';
+      const badgeCls = 'badge badge-' + r.status;
+      const tarikh = r.tarikh ? new Date(r.tarikh).toLocaleString('ms-MY', {
+        day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'
+      }) : '';
+      return `
+        <div class="last-row">
+          <div class="last-avatar">${inisial}</div>
+          <div class="last-info">
+            <div class="last-name">${r.nama_murid}</div>
+            <div class="last-meta">Ayat ${r.ayat} · ${tarikh}</div>
+          </div>
+          <span class="${badgeCls}">${r.status}</span>
+        </div>`;
+    }).join('');
+
+    container.innerHTML = html;
+  }
+
+  // ── TOAST ──
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ── SETTINGS ──
+  function openSettings() {
+    document.getElementById('inp-url').value   = config.url   || '';
+    document.getElementById('inp-key').value   = config.key   || '';
+    document.getElementById('inp-table').value = config.table || 'hafazan_records';
+    document.getElementById('overlay').classList.add('show');
+  }
+
+  function closeSettingsOutside(e) {
+    if (e.target === document.getElementById('overlay'))
+      document.getElementById('overlay').classList.remove('show');
+  }
+
+  function saveSettings() {
+    config = {
+      url:   document.getElementById('inp-url').value.trim().replace(/\/$/, ''),
+      key:   document.getElementById('inp-key').value.trim(),
+      table: document.getElementById('inp-table').value.trim() || 'hafazan_records'
+    };
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+    document.getElementById('overlay').classList.remove('show');
+    showToast('✅ Tetapan disimpan');
+  }
+
+  // ── INIT ──
+  loadLastRecords();
+
+  // Register SW
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+</script>
 </body>
 </html>
