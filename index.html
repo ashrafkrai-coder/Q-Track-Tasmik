@@ -26,6 +26,7 @@
 
         <div id="nfcZone" class="p-4 border-2 border-dashed border-slate-300 rounded-2xl text-center">
             <p id="nfcText">Sila TAP Kad NFC</p>
+            <button id="mulaBtn" class="mt-3 px-4 py-2 rounded-xl bg-slate-800 text-white font-bold">MULA SCAN NFC</button>
         </div>
 
         <button id="submitBtn" disabled class="w-full mt-6 p-4 rounded-xl bg-blue-600 text-white font-bold disabled:opacity-30">HANTAR REKOD</button>
@@ -119,20 +120,39 @@
 
         // Logik NFC
         async function startNFC() {
-            if ("NDEFReader" in window) {
+            const mulaBtn = document.getElementById('mulaBtn');
+            const nfcText = document.getElementById('nfcText');
+
+            if (!("NDEFReader" in window)) {
+                nfcZone.innerHTML = "<p class='text-red-600'>⚠️ Peranti/penyemak imbas tidak sokong Web NFC<br>(perlu Android + Chrome)</p>";
+                if (mulaBtn) mulaBtn.style.display = "none";
+                return;
+            }
+
+            try {
                 const ndef = new NDEFReader();
                 await ndef.scan();
+                nfcText.innerText = "Sila TAP kad NFC...";
+                if (mulaBtn) mulaBtn.style.display = "none";
+
                 ndef.onreading = (event) => {
                     kadNfc = event.serialNumber || "-";
-                    document.getElementById('nfcText').innerText = "✅ KAD DISAHKAN";
+                    nfcText.innerText = "✅ KAD DISAHKAN (" + kadNfc + ")";
                     nfcZone.classList.replace('border-slate-300', 'border-green-500');
                     submitBtn.disabled = false;
                     daftarBtn.disabled = false;
                 };
-            } else {
-                nfcZone.innerHTML = "<p class='text-red-600'>⚠️ Peranti tidak sokong NFC</p>";
+
+                ndef.onerror = (err) => {
+                    nfcZone.innerHTML = "<p class='text-red-600'>❌ Ralat NFC: " + err + "</p>";
+                };
+            } catch (err) {
+                nfcZone.innerHTML = "<p class='text-red-600'>❌ Gagal mula scan: " + err.message + "<br>Sila tekan 'MULA SCAN NFC'.</p>";
             }
         }
+
+        // Auto-cuba (desktop/debug); di HP, tekan butang untuk dapat user activation
+        document.getElementById('mulaBtn').addEventListener('click', startNFC);
         startNFC();
     </script>
 </body>
