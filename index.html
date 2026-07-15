@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q-Track Tasmik</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-512.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen p-4">
+    <div class="max-w-sm mx-auto bg-white p-6 rounded-3xl shadow-2xl">
+        <h2 class="text-2xl font-bold mb-6 text-center text-slate-800">Q-Track Tasmik</h2>
+        
+        <select id="namaMurid" class="w-full p-3 mb-4 bg-slate-50 border rounded-xl">
+            <option>Ahmad Bin Ali</option>
+            <option>Siti Binti Abu</option>
+        </select>
+
+        <select id="status" class="w-full p-3 mb-6 bg-slate-50 border rounded-xl">
+            <option>Lancar</option>
+            <option>Perlu Ulang</option>
+            <option>Bimbingan</option>
+        </select>
+
+        <div id="nfcZone" class="p-4 border-2 border-dashed border-slate-300 rounded-2xl text-center">
+            <p id="nfcText">Sila TAP Kad NFC</p>
+        </div>
+
+        <button id="submitBtn" disabled class="w-full mt-6 p-4 rounded-xl bg-blue-600 text-white font-bold disabled:opacity-30">HANTAR REKOD</button>
+
+        <button id="daftarBtn" disabled class="w-full mt-3 p-4 rounded-xl bg-emerald-600 text-white font-bold disabled:opacity-30">DAFTAR KAD NFC</button>
+    </div>
+
+    <script>
+        // Pendaftaran Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('ws.js');
+        }
+
+        const ENDPOINT = "https://script.google.com/macros/s/AKfycbwX9O_EKK5r-roLdmLTmr0mYoCj-m4aJDDO7TMzBD9v025QDDDpgs4l7VYtM00UQ32Y/exec";
+        const submitBtn = document.getElementById('submitBtn');
+        const daftarBtn = document.getElementById('daftarBtn');
+        const nfcZone = document.getElementById('nfcZone');
+        let kadNfc = "";
+
+        async function loadStudents() {
+            const select = document.getElementById('namaMurid');
+            try {
+                const res = await fetch(ENDPOINT, { method: "GET" });
+                const data = await res.json();
+                const names = data.nama || [];
+                select.innerHTML = "";
+                if (names.length === 0) {
+                    select.innerHTML = "<option>-- Tiada rekod --</option>";
+                    return;
+                }
+                names.forEach((n) => {
+                    const opt = document.createElement("option");
+                    opt.value = n; opt.textContent = n;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                select.innerHTML = "<option>-- Gagal muat senarai --</option>";
+            }
+        }
+        loadStudents();
+
+        daftarBtn.addEventListener('click', async () => {
+            const data = new URLSearchParams({
+                aksi: "daftar",
+                nama: document.getElementById('namaMurid').value,
+                nfc: kadNfc
+            });
+
+            daftarBtn.disabled = true;
+            daftarBtn.innerText = "MENDAFTAR...";
+
+            try {
+                const res = await fetch(ENDPOINT, { method: "POST", body: data });
+                const msg = (await res.text()).trim();
+                if (!res.ok) throw new Error("Server: " + res.status);
+                nfcZone.innerHTML = "<p class='text-emerald-600 font-bold'>✅ " + msg + "</p>";
+            } catch (err) {
+                nfcZone.innerHTML = "<p class='text-red-600 font-bold'>❌ GAGAL: " + err.message + "</p>";
+            } finally {
+                daftarBtn.innerText = "DAFTAR KAD NFC";
+                daftarBtn.disabled = false;
+            }
+        });
+
+        submitBtn.addEventListener('click', async () => {
+            const data = new URLSearchParams({
+                nama: document.getElementById('namaMurid').value,
+                status: document.getElementById('status').value,
+                masa: new Date().toLocaleString('ms-MY'),
+                nfc: kadNfc
+            });
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = "MENGHANTAR...";
+
+            try {
+                const res = await fetch(ENDPOINT, {
+                    method: "POST",
+                    body: data
+                });
+                if (!res.ok) throw new Error("Server: " + res.status);
+                nfcZone.innerHTML = "<p class='text-green-600 font-bold'>✅ REKOD DIHANTAR</p>";
+                submitBtn.disabled = true;
+            } catch (err) {
+                nfcZone.innerHTML = "<p class='text-red-600 font-bold'>❌ GAGAL: " + err.message + "</p>";
+                submitBtn.disabled = false;
+            } finally {
+                submitBtn.innerText = "HANTAR REKOD";
+            }
+        });
+
+        // Logik NFC
+        async function startNFC() {
+            if ("NDEFReader" in window) {
+                const ndef = new NDEFReader();
+                await ndef.scan();
+                ndef.onreading = (event) => {
+                    kadNfc = event.serialNumber || "-";
+                    document.getElementById('nfcText').innerText = "✅ KAD DISAHKAN";
+                    nfcZone.classList.replace('border-slate-300', 'border-green-500');
+                    submitBtn.disabled = false;
+                    daftarBtn.disabled = false;
+                };
+            } else {
+                nfcZone.innerHTML = "<p class='text-red-600'>⚠️ Peranti tidak sokong NFC</p>";
+            }
+        }
+        startNFC();
+    </script>
+</body>
+</html>
