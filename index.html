@@ -768,8 +768,7 @@
       const { data, error } = await supabaseClient
         .from(config.table)
         .update({
-          nfc_id: uid,
-          updated_at: new Date().toISOString()
+          nfc_id: uid
         })
         .eq('id', muridId)
         .select();
