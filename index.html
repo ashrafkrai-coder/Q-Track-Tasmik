@@ -203,6 +203,36 @@
       transition: border-color .15s; margin-bottom: 14px; background: var(--white);
     }
     .field input:focus, .field select:focus { border-color: var(--emerald); }
+
+    /* ── DEBUG PANEL ── */
+    .debug-panel {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 500;
+      max-height: 45vh; overflow-y: auto;
+      background: #0b0b0f; color: #d6f5e0;
+      font: 11px/1.5 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      padding: calc(env(safe-area-inset-bottom,0px) + 8px) 10px 10px;
+      border-top: 2px solid var(--gold);
+      transform: translateY(100%); transition: transform .25s ease;
+    }
+    .debug-panel.show { transform: translateY(0); }
+    .debug-panel .dbg-head {
+      display: flex; justify-content: space-between; align-items: center;
+      color: var(--gold); font-weight: 700; margin-bottom: 6px;
+    }
+    .debug-panel .dbg-head button {
+      background: #1c1c22; color: #fff; border: 1px solid #333;
+      border-radius: 8px; padding: 4px 10px; font-size: 11px; cursor: pointer;
+    }
+    .debug-panel .dbg-line { white-space: pre-wrap; word-break: break-word; }
+    .debug-panel .dbg-err { color: #ff7b72; }
+    .debug-panel .dbg-ok  { color: #56d364; }
+    .debug-panel .dbg-warn{ color: #e3b341; }
+    .btn-debug {
+      position: fixed; left: 12px; bottom: calc(env(safe-area-inset-bottom,24px) + 12px);
+      z-index: 501; background: rgba(0,0,0,.7); color: var(--gold);
+      border: 1px solid var(--gold); border-radius: 20px;
+      padding: 6px 12px; font-size: 11px; font-weight: 700; cursor: pointer;
+    }
     .btn-save {
       width: 100%; background: var(--emerald); color: var(--white); border: none;
       border-radius: var(--radius-pill); padding: 15px; font-size: 15px;
@@ -310,7 +340,21 @@
       <div class="last-empty">Belum ada rekod dimuatkan</div>
     </div>
   </div>
+  </div>
 </div>
+
+<!-- Debug -->
+<button class="btn-debug" onclick="toggleDebug()">🐞 Debug</button>
+<div class="debug-panel" id="debug-panel">
+  <div class="dbg-head">
+    <span>DEBUG LOG</span>
+    <span>
+      <button onclick="runDiag()">Test Koneksi</button>
+      <button onclick="clearDebug()">Clear</button>
+      <button onclick="toggleDebug()">Tutup</button>
+    </span>
+  </div>
+  <div id="debug-log"></div>
 </div>
 
 <!-- Toast -->
@@ -381,6 +425,9 @@
   function initSupabase() {
     if (window.supabase) {
       supabaseClient = window.supabase.createClient(config.url, config.key);
+      dbg('Supabase client dibuat: ' + config.url, 'ok');
+    } else {
+      dbg('❌ window.supabase tiada — library tak dimuat', 'err');
     }
   }
   initSupabase();
@@ -392,10 +439,12 @@
     
     if (!supabaseClient) {
       sel.innerHTML = '<option value="">— Supabase belum dikonfigurasi —</option>';
+      dbg('❌ loadStudents: supabaseClient null', 'err');
       return;
     }
 
     try {
+      dbg('loadStudents: SELECT ' + config.table + '…');
       const { data, error } = await supabaseClient
         .from(config.table)
         .select('id, nama_murid, kelas, last_ayat, nfc_id, peratus, bintang')
@@ -404,6 +453,7 @@
       if (error) throw error;
 
       studentsData = data || [];
+      dbg('loadStudents: ' + studentsData.length + ' murid dimuat', 'ok');
       
       // Populate Main Select
       sel.innerHTML = '<option value="">— Pilih Murid —</option>';
@@ -431,6 +481,7 @@
     } catch (err) {
       console.error(err);
       sel.innerHTML = '<option value="">— Gagal muat data —</option>';
+      dbg('❌ loadStudents gagal: ' + (err.message || err), 'err');
       showToast('❌ Gagal sambung ke Supabase');
     }
   }
@@ -582,7 +633,11 @@
     if (!muridId || !ayat || !statusPilih || !nfcVerified) return;
 
     const student = studentsData.find(s => s.id === muridId);
-    if (!student) { showToast('❌ Data murid tidak ditemui'); return; }
+    if (!student) {
+      dbg('❌ hantarRekod: muridId "' + muridId + '" tak dijumpai dalam studentsData', 'err');
+      showToast('❌ Data murid tidak ditemui');
+      return;
+    }
 
     // Sahkan UID kad sepadan (jika sudah ada dalam DB)
     if (student.nfc_id && student.nfc_id !== nfcUID) {
@@ -603,6 +658,7 @@
     }
 
     try {
+      dbg('hantarRekod: UPDATE baris id=' + muridId + ' (ayat=' + ayat + ', nfc_id=' + nfcUID + ')');
       const { error } = await supabaseClient
         .from(config.table)
         .update({
@@ -613,7 +669,11 @@
         })
         .eq('id', muridId);
 
-      if (error) throw error;
+      if (error) {
+        dbg('❌ hantarRekod error: ' + JSON.stringify(error), 'err');
+        throw error;
+      }
+      dbg('hantarRekod: berjaya', 'ok');
 
       // Update local state
       student.last_ayat = ayat;
@@ -675,6 +735,84 @@
     t.textContent = msg;
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ── DEBUG SYSTEM ──
+  function dbg(msg, type) {
+    const log = document.getElementById('debug-log');
+    if (!log) return;
+    const line = document.createElement('div');
+    line.className = 'dbg-line' + (type ? ' dbg-' + type : '');
+    const t = new Date().toLocaleTimeString('ms-MY');
+    line.textContent = `[${t}] ${msg}`;
+    log.appendChild(line);
+    log.parentElement.scrollTop = log.parentElement.scrollHeight;
+    console.log('[DEBUG]', msg);
+  }
+  function toggleDebug() {
+    const p = document.getElementById('debug-panel');
+    p.classList.toggle('show');
+    if (p.classList.contains('show')) dbg('Debug panel dibuka. Protocol: ' + location.protocol);
+  }
+  function clearDebug() {
+    const log = document.getElementById('debug-log');
+    if (log) log.innerHTML = '';
+  }
+
+  // Test koneksi & diagnostic penuh ke Supabase
+  async function runDiag() {
+    dbg('── MULA DIAGNOSTIK ──');
+    dbg('URL: ' + config.url);
+    dbg('Table: ' + config.table);
+    dbg('Protocol: ' + location.protocol, location.protocol === 'file:' ? 'warn' : '');
+    if (location.protocol === 'file:') {
+      dbg('❌ Buka via file:// — Supabase & SW tak akan berfungsi. Guna http://localhost', 'err');
+    }
+    if (!window.supabase) { dbg('❌ Library Supabase tak dimuat', 'err'); return; }
+    if (!supabaseClient) { dbg('❌ supabaseClient null — initSupabase gagal', 'err'); return; }
+
+    // 1) SELECT
+    dbg('1) Test SELECT…');
+    try {
+      const { data, error } = await supabaseClient
+        .from(config.table).select('id, nama_murid, nfc_id').limit(5);
+      if (error) {
+        dbg('❌ SELECT error: ' + JSON.stringify(error), 'err');
+        if (error.code === '42501') dbg('   → RLS halang SELECT. Tambah policy SELECT.', 'warn');
+        if (error.code === '42P01') dbg('   → Jadual "' + config.table + '" tak wujud.', 'warn');
+        if (error.code === 'PGRST106') dbg('   → Lajur dalam select tak wujud.', 'warn');
+      } else {
+        dbg('✅ SELECT ok — ' + (data ? data.length : 0) + ' baris', 'ok');
+        dbg('   Contoh id: ' + (data && data[0] ? JSON.stringify(data[0]) : 'tiada'));
+        if (data && data[0] && data[0].id === undefined)
+          dbg('   ⚠️ Lajur "id" tiada — .eq("id",...) akan gagal!', 'warn');
+      }
+    } catch (e) { dbg('❌ SELECT exception: ' + e.message, 'err'); }
+
+    // 2) UPDATE test (update baris pertama balik ke nilai sama -> uji RLS UPDATE)
+    try {
+      const { data, error } = await supabaseClient
+        .from(config.table).select('id').limit(1);
+      if (!error && data && data[0] && data[0].id) {
+        const testId = data[0].id;
+        dbg('2) Test UPDATE pada id=' + testId + '…');
+        const res = await supabaseClient
+          .from(config.table).update({ nfc_id: data[0].nfc_id })
+          .eq('id', testId).select();
+        if (res.error) {
+          dbg('❌ UPDATE error: ' + JSON.stringify(res.error), 'err');
+          if (res.error.code === '42501') dbg('   → RLS halang UPDATE. Tambah policy UPDATE.', 'warn');
+        } else if (!res.data || res.data.length === 0) {
+          dbg('⚠️ UPDATE return 0 baris — RLS halang (senyap) atau id tak sepadan', 'warn');
+        } else {
+          dbg('✅ UPDATE ok — ' + res.data.length + ' baris dikemaskini', 'ok');
+        }
+      } else {
+        dbg('2) UPDATE dilepaskan (tiada baris utk diuji)');
+      }
+    } catch (e) { dbg('❌ UPDATE exception: ' + e.message, 'err'); }
+
+    dbg('── TAMAT DIAGNOSTIK ──');
   }
 
   // ── SETTINGS ──
@@ -757,10 +895,12 @@
 
     try {
       console.log('Updating Supabase...', config.table, muridId, uid);
+      dbg('saveRegister: UPDATE nfc_id baris id=' + muridId + ' → ' + uid);
 
       // Semak student wujud
       const student = studentsData.find(s => s.id === muridId);
       if (!student) {
+        dbg('❌ saveRegister: muridId "' + muridId + '" tak dijumpai dalam studentsData (' + studentsData.length + ' rekod)', 'err');
         throw new Error('Murid tidak dijumpai dalam data. ID: ' + muridId);
       }
 
@@ -774,13 +914,16 @@
         .select();
 
       console.log('Supabase response:', { data, error });
+      dbg('saveRegister response: ' + JSON.stringify({ data, error }));
 
       if (error) {
         console.error('Supabase error:', error);
+        dbg('❌ saveRegister error: ' + JSON.stringify(error), 'err');
         throw error;
       }
 
       if (!data || data.length === 0) {
+        dbg('⚠️ saveRegister: 0 baris dikemaskini — RLS halang (senyap) atau id tak sepadan', 'warn');
         throw new Error('Tiada rekod dikemaskini. Periksa ID murid.');
       }
 
@@ -817,11 +960,13 @@
   }
 
   // ── INIT ──
+  dbg('App dimulakan. Protocol=' + location.protocol + ' | table=' + config.table, location.protocol === 'file:' ? 'warn' : 'ok');
+  if (location.protocol === 'file:') dbg('⚠️ file:// dikesan — buka via http://localhost untuk Supabase berfungsi', 'warn');
   loadStudents();
   loadLastRecords();
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').catch(e => dbg('⚠️ SW register: ' + e.message, 'warn'));
   }
 </script>
 </body>
