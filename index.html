@@ -79,6 +79,25 @@
       font-size: 18px; pointer-events: none;
     }
     .status-card .card-body { padding: 14px 16px; }
+
+    /* ── COMPACT MODE (MOBILE) ── */
+    @media (max-width: 480px) {
+      .select-wrap select {
+        font-size: 10px !important;
+        padding: 6px 28px 6px 0 !important;
+      }
+      .select-wrap select option {
+        font-size: 9px !important;
+      }
+      .select-label {
+        font-size: 11px !important;
+        flex: 0 0 80px !important;
+      }
+      .select-row {
+        min-height: 36px !important;
+        padding: 0 12px !important;
+      }
+    }
     .status-pills { display: flex; gap: 8px; flex-wrap: wrap; }
     .pill {
       flex: 1; min-width: 80px; border: 1.5px solid var(--grey-200);
