@@ -72,32 +72,22 @@
       padding: 12px 28px 12px 0; appearance: none; -webkit-appearance: none;
       cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .select-wrap select option { font-size: 5px; }
+    .select-wrap select option { font-size: 10px; }
     .select-wrap::after {
       content: '›'; position: absolute; right: 0; top: 50%;
       transform: translateY(-50%) rotate(90deg); color: var(--grey-400);
       font-size: 18px; pointer-events: none;
     }
-    .status-card .card-body { padding: 14px 16px; }
-
+    
     /* ── COMPACT MODE (MOBILE) ── */
     @media (max-width: 480px) {
-      .select-wrap select {
-        font-size: 10px !important;
-        padding: 6px 28px 6px 0 !important;
-      }
-      .select-wrap select option {
-        font-size: 9px !important;
-      }
-      .select-label {
-        font-size: 11px !important;
-        flex: 0 0 80px !important;
-      }
-      .select-row {
-        min-height: 36px !important;
-        padding: 0 12px !important;
-      }
+      .select-wrap select { font-size: 10px !important; padding: 6px 28px 6px 0 !important; }
+      .select-wrap select option { font-size: 9px !important; }
+      .select-label { font-size: 11px !important; flex: 0 0 80px !important; }
+      .select-row { min-height: 36px !important; padding: 0 12px !important; }
     }
+
+    .status-card .card-body { padding: 14px 16px; }
     .status-pills { display: flex; gap: 8px; flex-wrap: wrap; }
     .pill {
       flex: 1; min-width: 80px; border: 1.5px solid var(--grey-200);
@@ -188,10 +178,7 @@
       transform: translateY(100%); transition: transform .3s cubic-bezier(.34,1.2,.64,1);
     }
     .overlay.show .sheet { transform: translateY(0); }
-    .sheet-handle {
-      width: 36px; height: 4px; border-radius: 2px;
-      background: var(--grey-200); margin: 0 auto 18px;
-    }
+    .sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--grey-200); margin: 0 auto 18px; }
     .sheet h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
     .field label {
       font-size: 12px; font-weight: 600; color: var(--grey-600);
@@ -238,9 +225,7 @@
       border-radius: var(--radius-pill); padding: 15px; font-size: 15px;
       font-weight: 700; font-family: inherit; cursor: pointer;
     }
-    .header-right {
-      position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
-    }
+    .header-right { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); }
     .btn-settings {
       background: rgba(255,255,255,.15); border: none; border-radius: 50%;
       width: 36px; height: 36px; display: flex; align-items: center;
@@ -273,7 +258,6 @@
 </header>
 
 <div class="scroll-body">
-  <!-- Borang -->
   <div class="card">
     <div class="card-header">Maklumat Murid</div>
     <div class="select-row">
@@ -300,7 +284,6 @@
     </div>
   </div>
 
-  <!-- Status -->
   <div class="card status-card">
     <div class="card-header">Status Bacaan</div>
     <div class="card-body">
@@ -312,7 +295,6 @@
     </div>
   </div>
 
-  <!-- NFC -->
   <div class="card nfc-card">
     <div class="card-header">Pengesahan Kad Murid (NFC)</div>
     <div class="card-body">
@@ -329,21 +311,16 @@
   </div>
 
   <button class="btn-link" onclick="openRegister()">🪪 Daftar / Semak Kad Murid</button>
-
-  <!-- Hantar -->
   <button class="btn-hantar" id="btn-hantar" disabled onclick="hantarRekod()">Hantar Rekod</button>
 
-  <!-- Rekod Terakhir -->
   <div class="card last-card">
     <div class="card-header">Rekod Ayat Terakhir</div>
     <div class="card-body" id="last-records">
       <div class="last-empty">Belum ada rekod dimuatkan</div>
     </div>
   </div>
-  </div>
 </div>
 
-<!-- Debug -->
 <button class="btn-debug" onclick="toggleDebug()">🐞 Debug</button>
 <div class="debug-panel" id="debug-panel">
   <div class="dbg-head">
@@ -357,10 +334,8 @@
   <div id="debug-log"></div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- Settings Sheet -->
 <div class="overlay" id="overlay" onclick="closeSettingsOutside(event)">
   <div class="sheet">
     <div class="sheet-handle"></div>
@@ -381,7 +356,6 @@
   </div>
 </div>
 
-<!-- Register Card Sheet -->
 <div class="overlay" id="reg-overlay" onclick="closeRegOutside(event)">
   <div class="sheet">
     <div class="sheet-handle"></div>
@@ -405,12 +379,11 @@
 </div>
 
 <script>
-  // ── STATE & CONFIG ──
   let statusPilih = '';
   let nfcVerified = false;
   let nfcUID = '';
   let scanLock = false;
-  let studentsData = []; // Data dari Supabase
+  let studentsData = [];
   let supabaseClient = null;
 
   const CONFIG_KEY = 'hafazan_config';
@@ -432,14 +405,12 @@
   }
   initSupabase();
 
-  // ── LOAD DATA DARI SUPABASE ──
   async function loadStudents() {
     const sel = document.getElementById('sel-murid');
     const regSel = document.getElementById('reg-murid');
     
     if (!supabaseClient) {
       sel.innerHTML = '<option value="">— Supabase belum dikonfigurasi —</option>';
-      dbg('❌ loadStudents: supabaseClient null', 'err');
       return;
     }
 
@@ -455,7 +426,6 @@
       studentsData = data || [];
       dbg('loadStudents: ' + studentsData.length + ' murid dimuat', 'ok');
       
-      // Populate Main Select
       sel.innerHTML = '<option value="">— Pilih Murid —</option>';
       regSel.innerHTML = '<option value="">— Pilih Murid —</option>';
       
@@ -466,7 +436,7 @@
 
       studentsData.forEach(s => {
         const opt = document.createElement('option');
-        opt.value = s.id; // Guna ID untuk ketepatan
+        opt.value = s.id; 
         opt.textContent = `${s.nama_murid} (${s.kelas || 'Tiada Kelas'})`;
         opt.dataset.nama = s.nama_murid;
         sel.appendChild(opt);
@@ -486,7 +456,6 @@
     }
   }
 
-  // ── UI INTERACTIONS ──
   function pilihStatus(el) {
     document.querySelectorAll('.pill').forEach(p => p.className = 'pill');
     const val = el.dataset.val;
@@ -509,7 +478,8 @@
     checkReady();
     const muridId = document.getElementById('sel-murid').value;
     const hint = document.getElementById('nfc-hint');
-    const s = studentsData.find(x => x.id === muridId);
+    // FIX: Gunakan String() untuk elak masalah Number vs String
+    const s = studentsData.find(x => String(x.id) === String(muridId));
     
     if (s) {
       if (s.nfc_id) {
@@ -526,7 +496,6 @@
     }
   }
 
-  // ── NFC SCAN LOGIC ──
   async function scanNFC() {
     if (scanLock) return;
     const ring = document.getElementById('nfc-ring');
@@ -591,13 +560,13 @@
     const sub = document.getElementById('nfc-sub');
     
     if (match) {
-      if (!sel.value || sel.value !== match.id) {
+      if (!sel.value || String(sel.value) !== String(match.id)) {
         sel.value = match.id;
         sel.dispatchEvent(new Event('change'));
       }
       sub.textContent = `UID: ${nfcUID} · ${match.nama_murid}`;
     } else {
-      const currentName = studentsData.find(s => s.id === sel.value)?.nama_murid || 'Murid';
+      const currentName = studentsData.find(s => String(s.id) === String(sel.value))?.nama_murid || 'Murid';
       sub.textContent = `UID: ${nfcUID} (Belum didaftar untuk ${currentName})`;
     }
   }
@@ -624,7 +593,6 @@
     scanLock = false;
   }
 
-  // ── HANTAR KE SUPABASE (UPDATE) ──
   async function hantarRekod() {
     const muridId = document.getElementById('sel-murid').value;
     const ayat = document.getElementById('sel-ayat').value;
@@ -632,14 +600,14 @@
 
     if (!muridId || !ayat || !statusPilih || !nfcVerified) return;
 
-    const student = studentsData.find(s => s.id === muridId);
+    // FIX: Gunakan String() untuk perbandingan
+    const student = studentsData.find(s => String(s.id) === String(muridId));
     if (!student) {
       dbg('❌ hantarRekod: muridId "' + muridId + '" tak dijumpai dalam studentsData', 'err');
       showToast('❌ Data murid tidak ditemui');
       return;
     }
 
-    // Sahkan UID kad sepadan (jika sudah ada dalam DB)
     if (student.nfc_id && student.nfc_id !== nfcUID) {
       showToast('⚠️ UID kad tidak sepadan dengan rekod ' + student.nama_murid);
       return;
@@ -648,7 +616,6 @@
     btn.disabled = true;
     btn.textContent = 'Menghantar…';
 
-    // Logik Gamifikasi: Jika Lancar, tambah 1 bintang & 2% peratus
     let newBintang = student.bintang || 0;
     let newPeratus = student.peratus || 0;
 
@@ -663,7 +630,7 @@
         .from(config.table)
         .update({
           last_ayat: ayat,
-          nfc_id: nfcUID, // Pastikan UID disimpan/dikemaskini
+          nfc_id: nfcUID,
           peratus: newPeratus,
           bintang: newBintang
         })
@@ -675,7 +642,6 @@
       }
       dbg('hantarRekod: berjaya', 'ok');
 
-      // Update local state
       student.last_ayat = ayat;
       student.nfc_id = nfcUID;
       student.peratus = newPeratus;
@@ -703,9 +669,7 @@
     onMuridChange();
   }
 
-  // ── LOCAL DISPLAY (Rekod Terakhir) ──
   function loadLastRecords() {
-    // Untuk paparan pantas, kita ambil 5 teratas dari studentsData yang ada last_ayat
     const withAyat = studentsData.filter(s => s.last_ayat).slice(0, 5);
     const container = document.getElementById('last-records');
 
@@ -729,7 +693,6 @@
     container.innerHTML = html;
   }
 
-  // ── TOAST ──
   function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -737,7 +700,6 @@
     setTimeout(() => t.classList.remove('show'), 3000);
   }
 
-  // ── DEBUG SYSTEM ──
   function dbg(msg, type) {
     const log = document.getElementById('debug-log');
     if (!log) return;
@@ -759,63 +721,33 @@
     if (log) log.innerHTML = '';
   }
 
-  // Test koneksi & diagnostic penuh ke Supabase
   async function runDiag() {
     dbg('── MULA DIAGNOSTIK ──');
     dbg('URL: ' + config.url);
     dbg('Table: ' + config.table);
-    dbg('Protocol: ' + location.protocol, location.protocol === 'file:' ? 'warn' : '');
-    if (location.protocol === 'file:') {
-      dbg('❌ Buka via file:// — Supabase & SW tak akan berfungsi. Guna http://localhost', 'err');
-    }
     if (!window.supabase) { dbg('❌ Library Supabase tak dimuat', 'err'); return; }
-    if (!supabaseClient) { dbg('❌ supabaseClient null — initSupabase gagal', 'err'); return; }
+    if (!supabaseClient) { dbg('❌ supabaseClient null', 'err'); return; }
 
-    // 1) SELECT
-    dbg('1) Test SELECT…');
     try {
-      const { data, error } = await supabaseClient
-        .from(config.table).select('id, nama_murid, nfc_id').limit(5);
-      if (error) {
-        dbg('❌ SELECT error: ' + JSON.stringify(error), 'err');
-        if (error.code === '42501') dbg('   → RLS halang SELECT. Tambah policy SELECT.', 'warn');
-        if (error.code === '42P01') dbg('   → Jadual "' + config.table + '" tak wujud.', 'warn');
-        if (error.code === 'PGRST106') dbg('   → Lajur dalam select tak wujud.', 'warn');
-      } else {
-        dbg('✅ SELECT ok — ' + (data ? data.length : 0) + ' baris', 'ok');
-        dbg('   Contoh id: ' + (data && data[0] ? JSON.stringify(data[0]) : 'tiada'));
-        if (data && data[0] && data[0].id === undefined)
-          dbg('   ⚠️ Lajur "id" tiada — .eq("id",...) akan gagal!', 'warn');
-      }
+      const { data, error } = await supabaseClient.from(config.table).select('id, nama_murid, nfc_id').limit(5);
+      if (error) dbg('❌ SELECT error: ' + JSON.stringify(error), 'err');
+      else dbg('✅ SELECT ok — ' + (data ? data.length : 0) + ' baris', 'ok');
     } catch (e) { dbg('❌ SELECT exception: ' + e.message, 'err'); }
 
-    // 2) UPDATE test (update baris pertama balik ke nilai sama -> uji RLS UPDATE)
     try {
-      const { data, error } = await supabaseClient
-        .from(config.table).select('id').limit(1);
+      const { data, error } = await supabaseClient.from(config.table).select('id').limit(1);
       if (!error && data && data[0] && data[0].id) {
         const testId = data[0].id;
-        dbg('2) Test UPDATE pada id=' + testId + '…');
-        const res = await supabaseClient
-          .from(config.table).update({ nfc_id: data[0].nfc_id })
-          .eq('id', testId).select();
-        if (res.error) {
-          dbg('❌ UPDATE error: ' + JSON.stringify(res.error), 'err');
-          if (res.error.code === '42501') dbg('   → RLS halang UPDATE. Tambah policy UPDATE.', 'warn');
-        } else if (!res.data || res.data.length === 0) {
-          dbg('⚠️ UPDATE return 0 baris — RLS halang (senyap) atau id tak sepadan', 'warn');
-        } else {
-          dbg('✅ UPDATE ok — ' + res.data.length + ' baris dikemaskini', 'ok');
-        }
-      } else {
-        dbg('2) UPDATE dilepaskan (tiada baris utk diuji)');
+        dbg('Test UPDATE pada id=' + testId + '…');
+        const res = await supabaseClient.from(config.table).update({ nfc_id: data[0].nfc_id }).eq('id', testId).select();
+        if (res.error) dbg('❌ UPDATE error: ' + JSON.stringify(res.error), 'err');
+        else if (!res.data || res.data.length === 0) dbg('⚠️ UPDATE return 0 baris', 'warn');
+        else dbg('✅ UPDATE ok — ' + res.data.length + ' baris dikemaskini', 'ok');
       }
     } catch (e) { dbg('❌ UPDATE exception: ' + e.message, 'err'); }
-
     dbg('── TAMAT DIAGNOSTIK ──');
   }
 
-  // ── SETTINGS ──
   function openSettings() {
     document.getElementById('inp-url').value = config.url || '';
     document.getElementById('inp-key').value = config.key || '';
@@ -838,7 +770,6 @@
     loadStudents();
   }
 
-  // ── DAFTAR KAD (UPDATE SUPABASE) ──
   function openRegister() {
     document.getElementById('reg-uid').value = '';
     document.getElementById('reg-ring').className = 'nfc-ring';
@@ -852,12 +783,7 @@
     const ring = document.getElementById('reg-ring');
     const inp = document.getElementById('reg-uid');
     ring.className = 'nfc-ring scanning';
-    
-    const fill = (uid) => { 
-      inp.value = uid; 
-      ring.className = 'nfc-ring success'; 
-    };
-
+    const fill = (uid) => { inp.value = uid; ring.className = 'nfc-ring success'; };
     try {
       if ('NDEFReader' in window) {
         const reader = new NDEFReader();
@@ -865,9 +791,7 @@
         reader.addEventListener('reading', ({ serialNumber }) => fill(serialNumber || 'UID-' + Date.now()));
         reader.addEventListener('readingerror', () => { ring.className = 'nfc-ring'; showToast('Gagal scan kad'); });
         setTimeout(() => { if (!inp.value) ring.className = 'nfc-ring'; }, 15000);
-      } else {
-        throw new Error('no-nfc');
-      }
+      } else { throw new Error('no-nfc'); }
     } catch (e) {
       setTimeout(() => fill('DEMO-' + Math.random().toString(36).substr(2,8).toUpperCase()), 1500);
     }
@@ -877,16 +801,8 @@
     const muridId = document.getElementById('reg-murid').value;
     const uid = document.getElementById('reg-uid').value.trim();
 
-    console.log('Register NFC:', { muridId, uid });
-
-    if (!muridId) {
-      showToast('⚠️ Sila pilih murid');
-      return;
-    }
-    if (!uid) {
-      showToast('⚠️ Sila scan atau taip UID kad');
-      return;
-    }
+    if (!muridId) { showToast('⚠️ Sila pilih murid'); return; }
+    if (!uid) { showToast('⚠️ Sila scan atau taip UID kad'); return; }
 
     const btn = document.querySelector('#reg-overlay .btn-save');
     const originalText = btn.textContent;
@@ -894,74 +810,37 @@
     btn.textContent = 'Menyimpan...';
 
     try {
-      console.log('Updating Supabase...', config.table, muridId, uid);
       dbg('saveRegister: UPDATE nfc_id baris id=' + muridId + ' → ' + uid);
+      // FIX: Gunakan String()
+      const student = studentsData.find(s => String(s.id) === String(muridId));
+      if (!student) throw new Error('Murid tidak dijumpai dalam data. ID: ' + muridId);
 
-      // Semak student wujud
-      const student = studentsData.find(s => s.id === muridId);
-      if (!student) {
-        dbg('❌ saveRegister: muridId "' + muridId + '" tak dijumpai dalam studentsData (' + studentsData.length + ' rekod)', 'err');
-        throw new Error('Murid tidak dijumpai dalam data. ID: ' + muridId);
-      }
-
-      // UPDATE database
       const { data, error } = await supabaseClient
         .from(config.table)
-        .update({
-          nfc_id: uid
-        })
+        .update({ nfc_id: uid })
         .eq('id', muridId)
         .select();
 
-      console.log('Supabase response:', { data, error });
-      dbg('saveRegister response: ' + JSON.stringify({ data, error }));
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error('Tiada rekod dikemaskini. Periksa ID murid.');
 
-      if (error) {
-        console.error('Supabase error:', error);
-        dbg('❌ saveRegister error: ' + JSON.stringify(error), 'err');
-        throw error;
-      }
+      const localStudent = studentsData.find(s => String(s.id) === String(muridId));
+      if (localStudent) localStudent.nfc_id = uid;
 
-      if (!data || data.length === 0) {
-        dbg('⚠️ saveRegister: 0 baris dikemaskini — RLS halang (senyap) atau id tak sepadan', 'warn');
-        throw new Error('Tiada rekod dikemaskini. Periksa ID murid.');
-      }
-
-      // Update local state
-      const localStudent = studentsData.find(s => s.id === muridId);
-      if (localStudent) {
-        localStudent.nfc_id = uid;
-      }
-
-      // Close modal
       document.getElementById('reg-overlay').classList.remove('show');
-
-      // Refresh UI
       onMuridChange();
       loadLastRecords();
-
-      const studentName = student.nama_murid || 'Murid';
-      showToast(`✅ Kad berjaya didaftarkan untuk ${studentName}!`);
-
-      console.log('✅ Registration successful');
-
+      showToast(`✅ Kad berjaya didaftarkan untuk ${student.nama_murid}!`);
     } catch (err) {
       console.error('Registration error:', err);
       showToast('❌ Gagal mendaftar: ' + err.message);
-
-      // Show detailed error in console
-      if (err.details) {
-        console.error('Details:', err.details);
-      }
     } finally {
       btn.disabled = false;
       btn.textContent = originalText;
     }
   }
 
-  // ── INIT ──
   dbg('App dimulakan. Protocol=' + location.protocol + ' | table=' + config.table, location.protocol === 'file:' ? 'warn' : 'ok');
-  if (location.protocol === 'file:') dbg('⚠️ file:// dikesan — buka via http://localhost untuk Supabase berfungsi', 'warn');
   loadStudents();
   loadLastRecords();
 
