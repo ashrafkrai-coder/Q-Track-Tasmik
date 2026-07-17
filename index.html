@@ -6,282 +6,166 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#1A3A2E" />
-  <title>Hafazan Tracker</title>
+  <title>Hafazan Tracker NFC</title>
   <link rel="manifest" href="manifest.json" />
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
     :root {
-      --emerald:    #1A3A2E;
-      --emerald-mid:#25503E;
-      --gold:       #D4A843;
-      --gold-light: #F0CC78;
-      --cream:      #F8F5EE;
-      --white:      #FFFFFF;
-      --grey-100:   #F2F2F7;
-      --grey-200:   #E5E5EA;
-      --grey-400:   #AEAEB2;
-      --grey-600:   #636366;
-      --grey-900:   #1C1C1E;
-      --red:        #FF3B30;
-      --green:      #34C759;
-      --radius-card:18px;
-      --radius-pill:100px;
-      --shadow:     0 4px 24px rgba(0,0,0,.10);
-      --shadow-lg:  0 12px 40px rgba(0,0,0,.16);
+      --emerald: #1A3A2E; --emerald-mid: #25503E; --gold: #D4A843; --gold-light: #F0CC78;
+      --cream: #F8F5EE; --white: #FFFFFF; --grey-100: #F2F2F7; --grey-200: #E5E5EA;
+      --grey-400: #AEAEB2; --grey-600: #636366; --grey-900: #1C1C1E;
+      --red: #FF3B30; --green: #34C759; --radius-card: 18px; --radius-pill: 100px;
+      --shadow: 0 4px 24px rgba(0,0,0,.10); --shadow-lg: 0 12px 40px rgba(0,0,0,.16);
     }
-
     html { height: 100%; }
-
     body {
-      min-height: 100%;
-      background: #E3DFD5;
+      min-height: 100%; background: #E3DFD5;
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
-      color: var(--grey-900);
-      overflow-x: hidden;
-      display: flex;
-      justify-content: center;
+      color: var(--grey-900); overflow-x: hidden; display: flex; justify-content: center;
       -webkit-text-size-adjust: 100%;
     }
-
-    /* ── APP FRAME (phone-width, centered) ── */
     .app {
-      width: 100%;
-      max-width: 480px;
-      min-height: 100vh;
-      min-height: 100dvh;
-      background: var(--cream);
-      box-shadow: 0 0 40px rgba(0,0,0,.10);
-      display: flex;
-      flex-direction: column;
+      width: 100%; max-width: 480px; min-height: 100vh; min-height: 100dvh;
+      background: var(--cream); box-shadow: 0 0 40px rgba(0,0,0,.10);
+      display: flex; flex-direction: column;
     }
-
-    /* ── HEADER ── */
     header {
-      background: var(--emerald);
-      padding: max(env(safe-area-inset-top), 14px) 20px 18px;
-      position: sticky;
-      top: 0; z-index: 100;
+      background: var(--emerald); padding: max(env(safe-area-inset-top), 14px) 20px 18px;
+      position: sticky; top: 0; z-index: 100;
     }
     .header-eyebrow {
-      font-size: 11px; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--gold-light);
-      font-weight: 600; margin-bottom: 2px;
+      font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--gold-light); font-weight: 600; margin-bottom: 2px;
     }
     .header-title {
-      font-size: clamp(20px, 6vw, 26px); font-weight: 700;
-      color: var(--white); letter-spacing: -.4px;
-      display: flex; align-items: center; gap: 10px;
+      font-size: clamp(20px, 6vw, 26px); font-weight: 700; color: var(--white);
+      letter-spacing: -.4px; display: flex; align-items: center; gap: 10px;
     }
     .header-title span { font-size: 22px; }
-
-    /* ── SCROLL BODY ── */
     .scroll-body {
-      flex: 1;
-      padding: 16px 14px calc(env(safe-area-inset-bottom,24px) + 24px);
+      flex: 1; padding: 16px 14px calc(env(safe-area-inset-bottom,24px) + 24px);
       display: flex; flex-direction: column; gap: 14px;
     }
-
-    /* ── CARD ── */
     .card {
-      background: var(--white);
-      border-radius: var(--radius-card);
-      box-shadow: var(--shadow);
-      overflow: hidden;
+      background: var(--white); border-radius: var(--radius-card);
+      box-shadow: var(--shadow); overflow: hidden;
     }
     .card-header {
-      background: var(--grey-100);
-      padding: 10px 16px;
-      font-size: 11px; font-weight: 700;
-      letter-spacing: .06em; text-transform: uppercase;
-      color: var(--grey-600);
+      background: var(--grey-100); padding: 10px 16px; font-size: 11px; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase; color: var(--grey-600);
       border-bottom: 1px solid var(--grey-200);
     }
-
-    /* ── SELECT ROW ── */
     .select-row {
-      display: flex; align-items: center;
-      padding: 0 16px;
-      border-bottom: 1px solid var(--grey-200);
-      min-height: 42px;
+      display: flex; align-items: center; padding: 0 16px;
+      border-bottom: 1px solid var(--grey-200); min-height: 42px;
     }
     .select-row:last-child { border-bottom: none; }
     .select-label {
-      font-size: 14px; font-weight: 500;
-      color: var(--grey-900); flex: 0 0 100px;
+      font-size: 14px; font-weight: 500; color: var(--grey-900); flex: 0 0 100px;
     }
     .select-wrap { flex: 1; position: relative; }
     .select-wrap select {
-      width: 100%; border: none; outline: none;
-      background: transparent;
-      font-size: 12px; color: var(--emerald);
-      font-weight: 600; font-family: inherit;
-      padding: 12px 28px 12px 0;
-      appearance: none; -webkit-appearance: none;
-      cursor: pointer; user-select: none; -webkit-user-select: none;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      width: 100%; border: none; outline: none; background: transparent;
+      font-size: 12px; color: var(--emerald); font-weight: 600; font-family: inherit;
+      padding: 12px 28px 12px 0; appearance: none; -webkit-appearance: none;
+      cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .select-wrap select option { font-size: 10px; }
     .select-wrap::after {
-      content: '›';
-      position: absolute; right: 0; top: 50%;
-      transform: translateY(-50%) rotate(90deg);
-      color: var(--grey-400); font-size: 18px;
-      pointer-events: none;
+      content: '›'; position: absolute; right: 0; top: 50%;
+      transform: translateY(-50%) rotate(90deg); color: var(--grey-400);
+      font-size: 18px; pointer-events: none;
     }
-
-    /* ── STATUS PILLS ── */
     .status-card .card-body { padding: 14px 16px; }
-    .status-pills {
-      display: flex; gap: 8px; flex-wrap: wrap;
-    }
+    .status-pills { display: flex; gap: 8px; flex-wrap: wrap; }
     .pill {
-      flex: 1; min-width: 80px;
-      border: 1.5px solid var(--grey-200);
-      border-radius: var(--radius-pill);
-      padding: 10px 6px;
-      text-align: center;
-      font-size: 13px; font-weight: 600;
-      color: var(--grey-600);
-      cursor: pointer; transition: all .18s ease;
-      background: var(--white);
+      flex: 1; min-width: 80px; border: 1.5px solid var(--grey-200);
+      border-radius: var(--radius-pill); padding: 10px 6px; text-align: center;
+      font-size: 13px; font-weight: 600; color: var(--grey-600);
+      cursor: pointer; transition: all .18s ease; background: var(--white);
     }
-    .pill.active-lancar   { background: #E8F8ED; border-color: var(--green);  color: #1B7A3A; }
-    .pill.active-ulang    { background: #FFF6E0; border-color: var(--gold);   color: #8A6200; }
-    .pill.active-bimbingan{ background: #FFEEED; border-color: var(--red);    color: #C0271F; }
-
-    /* ── NFC SECTION ── */
+    .pill.active-lancar { background: #E8F8ED; border-color: var(--green); color: #1B7A3A; }
+    .pill.active-ulang { background: #FFF6E0; border-color: var(--gold); color: #8A6200; }
+    .pill.active-bimbingan { background: #FFEEED; border-color: var(--red); color: #C0271F; }
+    
     .nfc-card { text-align: center; }
     .nfc-card .card-body { padding: 28px 20px; }
     .nfc-ring {
-      width: 100px; height: 100px;
-      border-radius: 50%;
-      background: var(--grey-100);
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 16px;
-      position: relative;
-      cursor: pointer;
-      transition: transform .15s ease;
+      width: 100px; height: 100px; border-radius: 50%; background: var(--grey-100);
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+      position: relative; cursor: pointer; transition: transform .15s ease;
     }
     .nfc-ring:active { transform: scale(.94); }
     .nfc-ring svg { width: 48px; height: 48px; color: var(--emerald); }
-
-    /* Ripple rings */
     .nfc-ring::before, .nfc-ring::after {
-      content: '';
-      position: absolute; inset: 0;
-      border-radius: 50%;
-      border: 2px solid var(--emerald);
-      opacity: 0;
-      transform: scale(1);
+      content: ''; position: absolute; inset: 0; border-radius: 50%;
+      border: 2px solid var(--emerald); opacity: 0; transform: scale(1);
     }
-    .nfc-ring.scanning::before {
-      animation: ripple 1.4s ease-out infinite;
-    }
-    .nfc-ring.scanning::after {
-      animation: ripple 1.4s ease-out .5s infinite;
-    }
-    .nfc-ring.scanning {
-      background: #E4F0EB;
-    }
-    .nfc-ring.scanning svg { color: var(--emerald); }
-    .nfc-ring.success {
-      background: #E8F8ED;
-      animation: none;
-    }
+    .nfc-ring.scanning::before { animation: ripple 1.4s ease-out infinite; }
+    .nfc-ring.scanning::after { animation: ripple 1.4s ease-out .5s infinite; }
+    .nfc-ring.scanning { background: #E4F0EB; }
+    .nfc-ring.success { background: #E8F8ED; animation: none; }
     .nfc-ring.success svg { color: var(--green); }
-
     @keyframes ripple {
-      0%   { opacity: .5; transform: scale(1); }
-      100% { opacity: 0;  transform: scale(1.9); }
+      0% { opacity: .5; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1.9); }
     }
-
-    .nfc-label {
-      font-size: 16px; font-weight: 600; color: var(--grey-900);
-      margin-bottom: 4px;
-    }
-    .nfc-sub {
-      font-size: 13px; color: var(--grey-400);
-    }
-
-    /* ── HANTAR BTN ── */
+    .nfc-label { font-size: 16px; font-weight: 600; color: var(--grey-900); margin-bottom: 4px; }
+    .nfc-sub { font-size: 13px; color: var(--grey-400); }
+    
     .btn-hantar {
-      width: 100%;
-      background: var(--emerald);
-      color: var(--white);
-      font-size: 16px; font-weight: 700;
-      border: none; border-radius: var(--radius-pill);
-      padding: 17px;
-      cursor: pointer;
-      letter-spacing: .02em;
-      transition: opacity .15s, transform .1s;
-      margin-top: 4px;
-      font-family: inherit;
+      width: 100%; background: var(--emerald); color: var(--white);
+      font-size: 16px; font-weight: 700; border: none; border-radius: var(--radius-pill);
+      padding: 17px; cursor: pointer; letter-spacing: .02em;
+      transition: opacity .15s, transform .1s; margin-top: 4px; font-family: inherit;
     }
     .btn-hantar:active { opacity: .85; transform: scale(.98); }
     .btn-hantar:disabled { opacity: .38; cursor: not-allowed; }
-
-    /* ── LAST RECORD ── */
+    
     .last-card .card-body { padding: 16px; }
-    .last-empty {
-      text-align: center; padding: 24px 0;
-      color: var(--grey-400); font-size: 14px;
-    }
+    .last-empty { text-align: center; padding: 24px 0; color: var(--grey-400); font-size: 14px; }
     .last-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 0;
+      display: flex; align-items: center; gap: 12px; padding: 10px 0;
       border-bottom: 1px solid var(--grey-200);
     }
     .last-row:last-child { border-bottom: none; }
     .last-avatar {
-      width: 40px; height: 40px;
-      border-radius: 50%;
-      background: var(--emerald);
-      color: var(--white);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px; font-weight: 700;
-      flex-shrink: 0;
+      width: 40px; height: 40px; border-radius: 50%; background: var(--emerald);
+      color: var(--white); display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 700; flex-shrink: 0;
     }
     .last-info { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; line-height: 1.3; }
     .last-name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .last-meta { font-size: 11px; color: var(--grey-600); white-space: nowrap; flex-shrink: 0; }
     .badge {
-      font-size: 11px; font-weight: 700;
-      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
       text-transform: uppercase; letter-spacing: .05em;
     }
-    .badge-lancar    { background: #E8F8ED; color: #1B7A3A; }
-    .badge-ulang     { background: #FFF6E0; color: #8A6200; }
+    .badge-lancar { background: #E8F8ED; color: #1B7A3A; }
+    .badge-ulang { background: #FFF6E0; color: #8A6200; }
     .badge-bimbingan { background: #FFEEED; color: #C0271F; }
-
-    /* ── TOAST ── */
+    
     .toast {
       position: fixed; bottom: calc(env(safe-area-inset-bottom,24px) + 16px);
       left: 50%; transform: translateX(-50%) translateY(80px);
-      background: var(--grey-900); color: var(--white);
-      padding: 12px 22px; border-radius: 20px;
-      font-size: 14px; font-weight: 500;
+      background: var(--grey-900); color: var(--white); padding: 12px 22px;
+      border-radius: 20px; font-size: 14px; font-weight: 500;
       transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s;
-      opacity: 0; z-index: 999; white-space: nowrap;
-      box-shadow: var(--shadow-lg);
+      opacity: 0; z-index: 999; white-space: nowrap; box-shadow: var(--shadow-lg);
     }
     .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-
-    /* ── SUPABASE CONFIG MODAL ── */
+    
     .overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,.45); z-index: 200;
-      display: flex; align-items: flex-end;
-      opacity: 0; pointer-events: none;
+      position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200;
+      display: flex; align-items: flex-end; opacity: 0; pointer-events: none;
       transition: opacity .25s;
     }
     .overlay.show { opacity: 1; pointer-events: all; }
     .sheet {
-      background: var(--white);
-      width: 100%; border-radius: 20px 20px 0 0;
+      background: var(--white); width: 100%; border-radius: 20px 20px 0 0;
       padding: 12px 20px calc(env(safe-area-inset-bottom,24px) + 20px);
-      transform: translateY(100%);
-      transition: transform .3s cubic-bezier(.34,1.2,.64,1);
+      transform: translateY(100%); transition: transform .3s cubic-bezier(.34,1.2,.64,1);
     }
     .overlay.show .sheet { transform: translateY(0); }
     .sheet-handle {
@@ -290,77 +174,37 @@
     }
     .sheet h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
     .field label {
-      font-size: 12px; font-weight: 600;
-      color: var(--grey-600); text-transform: uppercase;
-      letter-spacing: .06em; display: block; margin-bottom: 6px;
+      font-size: 12px; font-weight: 600; color: var(--grey-600);
+      text-transform: uppercase; letter-spacing: .06em; display: block; margin-bottom: 6px;
     }
-    .field input {
-      width: 100%; border: 1.5px solid var(--grey-200);
-      border-radius: 12px; padding: 13px 14px;
-      font-size: 16px; font-family: inherit;
-      outline: none; transition: border-color .15s;
-      margin-bottom: 14px;
+    .field input, .field select {
+      width: 100%; border: 1.5px solid var(--grey-200); border-radius: 12px;
+      padding: 13px 14px; font-size: 16px; font-family: inherit; outline: none;
+      transition: border-color .15s; margin-bottom: 14px; background: var(--white);
     }
-    .field input:focus { border-color: var(--emerald); }
+    .field input:focus, .field select:focus { border-color: var(--emerald); }
     .btn-save {
-      width: 100%; background: var(--emerald);
-      color: var(--white); border: none;
-      border-radius: var(--radius-pill);
-      padding: 15px; font-size: 15px; font-weight: 700;
-      font-family: inherit; cursor: pointer;
+      width: 100%; background: var(--emerald); color: var(--white); border: none;
+      border-radius: var(--radius-pill); padding: 15px; font-size: 15px;
+      font-weight: 700; font-family: inherit; cursor: pointer;
     }
-
-    /* Settings icon */
     .header-right {
-      position: absolute; right: 20px; top: 50%;
-      transform: translateY(-50%);
+      position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
     }
     .btn-settings {
-      background: rgba(255,255,255,.15);
-      border: none; border-radius: 50%;
-      width: 36px; height: 36px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; color: var(--white);
+      background: rgba(255,255,255,.15); border: none; border-radius: 50%;
+      width: 36px; height: 36px; display: flex; align-items: center;
+      justify-content: center; cursor: pointer; color: var(--white);
     }
-
-    /* Quran decoration */
-    .quran-deco {
-      text-align: center;
-      font-size: 13px; color: var(--grey-400);
-      padding: 4px 0 8px;
-      letter-spacing: .03em;
-    }
-
-    /* ── REGISTER LINK & TALLY ── */
     .btn-link {
-      display: block; width: 100%;
-      background: var(--grey-100);
-      color: var(--emerald);
-      border: 1px solid var(--grey-200);
-      border-radius: var(--radius-pill);
-      padding: 12px; font-size: 14px; font-weight: 600;
-      font-family: inherit; cursor: pointer;
+      display: block; width: 100%; background: var(--grey-100); color: var(--emerald);
+      border: 1px solid var(--grey-200); border-radius: var(--radius-pill);
+      padding: 12px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer;
     }
     .btn-link:active { opacity: .8; }
-    .nfc-hint {
-      font-size: 12px; color: var(--grey-600);
-      margin-top: 8px; font-weight: 600;
-    }
-    .nfc-hint.ok   { color: #1B7A3A; }
+    .nfc-hint { font-size: 12px; color: var(--grey-600); margin-top: 8px; font-weight: 600; }
+    .nfc-hint.ok { color: #1B7A3A; }
     .nfc-hint.warn { color: #C0271F; }
-    .tally-card .card-body { padding: 8px 16px; }
-    .tally-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 4px 0; border-bottom: 1px solid var(--grey-200);
-    }
-    .tally-row:last-child { border-bottom: none; }
-    .reg-field select {
-      width: 100%; border: 1.5px solid var(--grey-200);
-      border-radius: 12px; padding: 13px 14px;
-      font-size: 16px; font-family: inherit; outline: none;
-      background: var(--white); color: var(--emerald); font-weight: 600;
-      margin-bottom: 14px;
-    }
   </style>
 </head>
 <body>
@@ -368,9 +212,7 @@
 <div class="app">
 <header style="position:relative;">
   <div class="header-eyebrow">Sistem Pemantauan</div>
-  <div class="header-title">
-    <span>📖</span> Hafazan Tracker
-  </div>
+  <div class="header-title"><span>📖</span> Hafazan Tracker</div>
   <div class="header-right">
     <button class="btn-settings" onclick="openSettings()" aria-label="Tetapan">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -381,47 +223,21 @@
 </header>
 
 <div class="scroll-body">
-
   <!-- Borang -->
   <div class="card">
     <div class="card-header">Maklumat Murid</div>
     <div class="select-row">
       <span class="select-label">Nama Murid</span>
       <div class="select-wrap">
-        <select id="sel-murid">
-          <option value="">— Pilih Murid —</option>
-          <option>A'INANUR NAJIHAH BINTI ABU BAKAR</option>
-          <option>AHMAD DANIAL ASYRAF BIN RAHMAT</option>
-          <option>ANNUR ARISSA BINTI SYAHRUL REZUAN</option>
-          <option>AQLAN HADIF BIN AHMAD YAZID</option>
-          <option>DAIM ELFAARUQ BIN DZUL HANIF</option>
-          <option>IZZUL IMAN BIN IZZUDDIN</option>
-          <option>MUHAMMAD ADAM DARWISH BIN MOHD SYUKRI</option>
-          <option>MUHAMMAD ADAM IRSYAD BIN HAFIZ</option>
-          <option>MUHAMMAD AIZAT MIRZA BIN SUHAIMI</option>
-          <option>MUHAMMAD AMSYAR ARIF BIN BADRI SHAH</option>
-          <option>MUHAMMAD AMSYAR HAZIQ BIN MOHAMMAD HAFIZ</option>
-          <option>MUHAMMAD ANNAS NAQIEM BIN DAERI</option>
-          <option>MUHAMMAD AZRIF BIN LATIF</option>
-          <option>MUHAMMAD FAIQ ZIKRY BIN MOHAMMAD FIRDAUS</option>
-          <option>NOOR ZAEFRYL AFZAN BIN NOOR ZARIMAN</option>
-          <option>NUR ADRIANA BINTI SASTRAVIJAYA</option>
-          <option>NUR ALYA FARHANA BINTI MOHD ZANI</option>
-          <option>NUR AMEENA IMAN BINTI CHAIRIL ANWAR</option>
-          <option>NUR FATIMAH BINTI ASOOR</option>
-          <option>NUR INSYIRAH AMANI BINTI ROSZAIDI</option>
-          <option>NUR QALESYA ZINNIRAH BINTI MOHD LAMHAT</option>
-          <option>NUR QASEH SOFEA BINTI MOHAMMAD NAZRI</option>
-          <option>NURUL AIN BINTI SULAIMAN</option>
-          <option>QHAIREEN HANA BINTI ABDUL QAYYUM</option>
-          <option>ZAHIRAH DAYANA BINTI KAMAL FIKRI</option>
+        <select id="sel-murid" disabled>
+          <option value="">— Memuatkan Data... —</option>
         </select>
       </div>
     </div>
     <div class="select-row">
       <span class="select-label">Ayat</span>
       <div class="select-wrap">
-        <select id="sel-ayat">
+        <select id="sel-ayat" disabled>
           <option value="">— Pilih Ayat —</option>
           <option value="1-5">Ayat 1 – 5</option>
           <option value="6-10">Ayat 6 – 10</option>
@@ -465,9 +281,7 @@
   <button class="btn-link" onclick="openRegister()">🪪 Daftar / Semak Kad Murid</button>
 
   <!-- Hantar -->
-  <button class="btn-hantar" id="btn-hantar" disabled onclick="hantarRekod()">
-    Hantar Rekod
-  </button>
+  <button class="btn-hantar" id="btn-hantar" disabled onclick="hantarRekod()">Hantar Rekod</button>
 
   <!-- Rekod Terakhir -->
   <div class="card last-card">
@@ -476,19 +290,8 @@
       <div class="last-empty">Belum ada rekod dimuatkan</div>
     </div>
   </div>
-
-  <!-- Tally -->
-  <div class="card tally-card">
-    <div class="card-header">Senarai Kad &amp; Tally</div>
-    <div class="card-body" id="tally-list">
-      <div class="last-empty">Tiada pemetaan / rekod</div>
-    </div>
-  </div>
-
-
-</div><!-- end scroll-body -->
-
-</div><!-- end app -->
+</div>
+</div>
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
@@ -519,9 +322,9 @@
   <div class="sheet">
     <div class="sheet-handle"></div>
     <h2>🪪 Daftar Kad Murid</h2>
-    <div class="field reg-field">
+    <div class="field">
       <label>Nama Murid</label>
-      <select id="reg-murid"></select>
+      <select id="reg-murid"><option value="">— Pilih Murid —</option></select>
     </div>
     <div class="field">
       <label>UID Kad (auto dari scan / taip)</label>
@@ -533,35 +336,86 @@
         <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
       </svg>
     </div>
-    <button class="btn-save" onclick="saveRegister()">Simpan Pemetaan</button>
+    <button class="btn-save" onclick="saveRegister()">Simpan Pemetaan ke Supabase</button>
   </div>
 </div>
 
 <script>
-  // ── STATE ──
+  // ── STATE & CONFIG ──
   let statusPilih = '';
   let nfcVerified = false;
   let nfcUID = '';
   let scanLock = false;
+  let studentsData = []; // Data dari Supabase
+  let supabaseClient = null;
 
   const CONFIG_KEY = 'hafazan_config';
-
-  // Default Supabase credentials (anon key is public by design)
   const DEFAULT_CONFIG = {
-    url:   'https://ajhmwbuxtehkqoqlgqfc.supabase.co',
-    key:   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqaG13YnV4dGVoa3FvcWxncWZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMTI1MDksImV4cCI6MjA5OTY4ODUwOX0.KH31HCi4Vf0V1XTljb_XRCG8DHNs9veL-tJ_lOvbgAE',
+    url: 'https://ajhmwbuxtehkqoqlgqfc.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqaG13YnV4dGVoa3FvcWxncWZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMTI1MDksImV4cCI6MjA5OTY4ODUwOX0.KH31HCi4Vf0V1XTljb_XRCG8DHNs9veL-tJ_lOvbgAE',
     table: 'hafazan_records'
   };
 
   let config = Object.assign({}, DEFAULT_CONFIG, JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}'));
 
-  // ── STUDENT ↔ UID MAPPING (localStorage) ──
-  const STUDENTS_KEY = 'hafazan_students';
-  let students = JSON.parse(localStorage.getItem(STUDENTS_KEY) || '[]');
-  function studentByUID(uid){ return students.find(s => s.nfc_uid && s.nfc_uid === uid); }
-  function studentByName(n){ return students.find(s => s.nama_murid === n); }
+  function initSupabase() {
+    if (window.supabase) {
+      supabaseClient = window.supabase.createClient(config.url, config.key);
+    }
+  }
+  initSupabase();
 
-  // ── STATUS PILLS ──
+  // ── LOAD DATA DARI SUPABASE ──
+  async function loadStudents() {
+    const sel = document.getElementById('sel-murid');
+    const regSel = document.getElementById('reg-murid');
+    
+    if (!supabaseClient) {
+      sel.innerHTML = '<option value="">— Supabase belum dikonfigurasi —</option>';
+      return;
+    }
+
+    try {
+      const { data, error } = await supabaseClient
+        .from(config.table)
+        .select('id, nama_murid, kelas, last_ayat, nfc_id, peratus, bintang')
+        .order('nama_murid', { ascending: true });
+
+      if (error) throw error;
+
+      studentsData = data || [];
+      
+      // Populate Main Select
+      sel.innerHTML = '<option value="">— Pilih Murid —</option>';
+      regSel.innerHTML = '<option value="">— Pilih Murid —</option>';
+      
+      if (studentsData.length === 0) {
+        sel.innerHTML = '<option value="">— Tiada data dalam database —</option>';
+        return;
+      }
+
+      studentsData.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id; // Guna ID untuk ketepatan
+        opt.textContent = `${s.nama_murid} (${s.kelas || 'Tiada Kelas'})`;
+        opt.dataset.nama = s.nama_murid;
+        sel.appendChild(opt);
+
+        const regOpt = opt.cloneNode(true);
+        regSel.appendChild(regOpt);
+      });
+
+      sel.disabled = false;
+      document.getElementById('sel-ayat').disabled = false;
+      showToast('✅ Data murid berjaya dimuatkan');
+    } catch (err) {
+      console.error(err);
+      sel.innerHTML = '<option value="">— Gagal muat data —</option>';
+      showToast('❌ Gagal sambung ke Supabase');
+    }
+  }
+
+  // ── UI INTERACTIONS ──
   function pilihStatus(el) {
     document.querySelectorAll('.pill').forEach(p => p.className = 'pill');
     const val = el.dataset.val;
@@ -570,11 +424,10 @@
     checkReady();
   }
 
-  // ── FORM CHECK ──
   function checkReady() {
-    const murid = document.getElementById('sel-murid').value;
-    const ayat  = document.getElementById('sel-ayat').value;
-    const ok = murid && ayat && statusPilih && nfcVerified;
+    const muridId = document.getElementById('sel-murid').value;
+    const ayat = document.getElementById('sel-ayat').value;
+    const ok = muridId && ayat && statusPilih && nfcVerified;
     document.getElementById('btn-hantar').disabled = !ok;
   }
 
@@ -583,39 +436,42 @@
 
   function onMuridChange() {
     checkReady();
-    const n = document.getElementById('sel-murid').value;
+    const muridId = document.getElementById('sel-murid').value;
     const hint = document.getElementById('nfc-hint');
-    const s = studentByName(n);
-    if (n && s && s.nfc_uid) {
-      hint.textContent = 'Kad berdaftar: ' + s.nfc_uid;
-      hint.className = 'nfc-hint ok';
-      hint.style.display = 'block';
-    } else if (n) {
-      hint.textContent = 'Kad murid ini belum didaftarkan';
-      hint.className = 'nfc-hint warn';
-      hint.style.display = 'block';
+    const s = studentsData.find(x => x.id === muridId);
+    
+    if (s) {
+      if (s.nfc_id) {
+        hint.textContent = `Kad berdaftar: ${s.nfc_id} | Peratus: ${s.peratus || 0}%`;
+        hint.className = 'nfc-hint ok';
+        hint.style.display = 'block';
+      } else {
+        hint.textContent = 'Kad murid ini belum didaftarkan. Sila scan atau daftar.';
+        hint.className = 'nfc-hint warn';
+        hint.style.display = 'block';
+      }
     } else {
       hint.style.display = 'none';
     }
   }
 
-  // ── NFC SCAN ──
+  // ── NFC SCAN LOGIC ──
   async function scanNFC() {
     if (scanLock) return;
-    const ring  = document.getElementById('nfc-ring');
+    const ring = document.getElementById('nfc-ring');
     const label = document.getElementById('nfc-label');
-    const sub   = document.getElementById('nfc-sub');
+    const sub = document.getElementById('nfc-sub');
 
-    // Try Web NFC API
     if ('NDEFReader' in window) {
       try {
         scanLock = true;
         ring.className = 'nfc-ring scanning';
         label.textContent = 'Sedang mengimbas…';
-        sub.textContent   = 'Dekatkan kad murid sekarang';
+        sub.textContent = 'Dekatkan kad murid sekarang';
 
         const reader = new NDEFReader();
         await reader.scan();
+        
         reader.addEventListener('reading', ({ serialNumber }) => {
           nfcUID = serialNumber || 'UID-' + Date.now();
           nfcSuccess(ring, label, sub);
@@ -625,22 +481,12 @@
           nfcError(ring, label, sub);
           scanLock = false;
         });
-
-        // Timeout 15s
-        setTimeout(() => {
-          if (scanLock) {
-            nfcError(ring, label, sub);
-            scanLock = false;
-          }
-        }, 15000);
-
+        setTimeout(() => { if (scanLock) { nfcError(ring, label, sub); scanLock = false; } }, 15000);
       } catch(e) {
-        // Fallback: simulate (dev mode)
         simulateNFC(ring, label, sub);
         scanLock = false;
       }
     } else {
-      // Browser does not support NFC → simulate for demo
       simulateNFC(ring, label, sub);
     }
   }
@@ -648,177 +494,158 @@
   function simulateNFC(ring, label, sub) {
     scanLock = true;
     ring.className = 'nfc-ring scanning';
-    label.textContent = 'Sedang mengimbas… (Demo)';
-    sub.textContent   = 'NFC tidak disokong — mod demo';
+    label.textContent = 'Sedang mengimbas… (Mod Demo)';
+    sub.textContent = 'NFC tidak disokong browser ini';
     setTimeout(() => {
       nfcUID = 'DEMO-' + Math.random().toString(36).substr(2,8).toUpperCase();
       nfcSuccess(ring, label, sub);
       scanLock = false;
-    }, 2200);
+    }, 2000);
   }
 
   function nfcSuccess(ring, label, sub) {
     ring.className = 'nfc-ring success';
     ring.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
     label.textContent = 'Kad Disahkan ✓';
-    sub.textContent   = 'UID: ' + nfcUID;
+    sub.textContent = 'UID: ' + nfcUID;
     nfcVerified = true;
     resolveCard();
     checkReady();
     showToast('Kad murid berjaya disahkan');
   }
 
-  function setMurid(n) {
-    const sel = document.getElementById('sel-murid');
-    sel.value = n;
-    sel.dispatchEvent(new Event('change'));
-  }
-
   function resolveCard() {
-    const match = studentByUID(nfcUID);
-    const sel = document.getElementById('sel-murid').value;
+    const match = studentsData.find(s => s.nfc_id === nfcUID);
+    const sel = document.getElementById('sel-murid');
     const sub = document.getElementById('nfc-sub');
+    
     if (match) {
-      // Kad dikenali -> auto-pilih nama (tap dulu)
-      if (!sel || sel !== match.nama_murid) setMurid(match.nama_murid);
-      sub.textContent = 'UID: ' + nfcUID + ' · ' + match.nama_murid;
-    } else if (sel) {
-      // Pilih nama dulu -> kad belum didaftar
-      sub.textContent = 'UID: ' + nfcUID + ' (belum didaftar utk ' + sel + ')';
+      if (!sel.value || sel.value !== match.id) {
+        sel.value = match.id;
+        sel.dispatchEvent(new Event('change'));
+      }
+      sub.textContent = `UID: ${nfcUID} · ${match.nama_murid}`;
     } else {
-      sub.textContent = 'UID: ' + nfcUID + ' (kad tak dikenali)';
+      const currentName = studentsData.find(s => s.id === sel.value)?.nama_murid || 'Murid';
+      sub.textContent = `UID: ${nfcUID} (Belum didaftar untuk ${currentName})`;
     }
   }
 
   function nfcError(ring, label, sub) {
     ring.className = 'nfc-ring';
     label.textContent = 'Gagal — Cuba Semula';
-    sub.textContent   = 'Dekatkan kad murid ke telefon';
+    sub.textContent = 'Dekatkan kad murid ke telefon';
     nfcVerified = false;
     checkReady();
   }
 
   function resetNFC() {
-    const ring  = document.getElementById('nfc-ring');
+    const ring = document.getElementById('nfc-ring');
     ring.className = 'nfc-ring';
     ring.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M20 7a9 9 0 0 1 0 10M17 9.5a5 5 0 0 1 0 5M4 7a9 9 0 0 0 0 10M7 9.5a5 5 0 0 0 0 5"/>
       <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
     </svg>`;
     document.getElementById('nfc-label').textContent = 'Tap untuk Scan NFC';
-    document.getElementById('nfc-sub').textContent   = 'Dekatkan kad murid ke telefon';
+    document.getElementById('nfc-sub').textContent = 'Dekatkan kad murid ke telefon';
     nfcVerified = false;
     nfcUID = '';
     scanLock = false;
   }
 
-  // ── HANTAR KE SUPABASE ──
+  // ── HANTAR KE SUPABASE (UPDATE) ──
   async function hantarRekod() {
-    const murid  = document.getElementById('sel-murid').value;
-    const ayat   = document.getElementById('sel-ayat').value;
-    const btn    = document.getElementById('btn-hantar');
+    const muridId = document.getElementById('sel-murid').value;
+    const ayat = document.getElementById('sel-ayat').value;
+    const btn = document.getElementById('btn-hantar');
 
-    if (!murid || !ayat || !statusPilih || !nfcVerified) return;
+    if (!muridId || !ayat || !statusPilih || !nfcVerified) return;
 
-    // Sahkan UID kad sepadan dengan murid dipilih (jika sudah didaftar)
-    const stu = studentByName(murid);
-    if (stu && stu.nfc_uid && stu.nfc_uid !== nfcUID) {
-      showToast('⚠️ UID kad tak sepadan dgn ' + murid);
-      btn.disabled = false;
+    const student = studentsData.find(s => s.id === muridId);
+    if (!student) { showToast('❌ Data murid tidak ditemui'); return; }
+
+    // Sahkan UID kad sepadan (jika sudah ada dalam DB)
+    if (student.nfc_id && student.nfc_id !== nfcUID) {
+      showToast('⚠️ UID kad tidak sepadan dengan rekod ' + student.nama_murid);
       return;
     }
-
-    const rekod = {
-      nama_murid: murid,
-      ayat: ayat,
-      status: statusPilih,
-      nfc_uid: nfcUID,
-      tarikh: new Date().toISOString()
-    };
 
     btn.disabled = true;
     btn.textContent = 'Menghantar…';
 
-    // Save locally always
-    saveLocalRecord(rekod);
+    // Logik Gamifikasi: Jika Lancar, tambah 1 bintang & 2% peratus
+    let newBintang = student.bintang || 0;
+    let newPeratus = student.peratus || 0;
 
-    // Try Supabase if configured
-    if (config.url && config.key) {
-      try {
-        const res = await fetch(`${config.url}/rest/v1/${config.table || 'hafazan_records'}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': config.key,
-            'Authorization': 'Bearer ' + config.key,
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify(rekod)
-        });
-
-        if (res.ok) {
-          showToast('✅ Rekod berjaya dihantar ke Supabase');
-        } else {
-          const err = await res.json();
-          showToast('⚠️ Supabase: ' + (err.message || 'Ralat tidak diketahui'));
-        }
-      } catch(e) {
-        showToast('📱 Disimpan tempatan (tiada sambungan)');
-      }
-    } else {
-      showToast('📋 Rekod disimpan (Supabase belum dikonfigurasi)');
+    if (statusPilih === 'lancar') {
+      newBintang += 1;
+      newPeratus = Math.min(100, newPeratus + 2);
     }
 
-    loadLastRecords();
-    renderTally();
-    resetForm();
-    btn.textContent = 'Hantar Rekod';
+    try {
+      const { error } = await supabaseClient
+        .from(config.table)
+        .update({
+          last_ayat: ayat,
+          nfc_id: nfcUID, // Pastikan UID disimpan/dikemaskini
+          peratus: newPeratus,
+          bintang: newBintang
+        })
+        .eq('id', muridId);
+
+      if (error) throw error;
+
+      // Update local state
+      student.last_ayat = ayat;
+      student.nfc_id = nfcUID;
+      student.peratus = newPeratus;
+      student.bintang = newBintang;
+
+      showToast(`✅ Rekod berjaya! (+1 ⭐ jika Lancar)`);
+      loadLastRecords();
+      resetForm();
+    } catch (err) {
+      console.error(err);
+      showToast('❌ Gagal menghantar: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Hantar Rekod';
+    }
   }
 
   function resetForm() {
     document.getElementById('sel-murid').value = '';
-    document.getElementById('sel-ayat').value  = '';
+    document.getElementById('sel-ayat').value = '';
     document.querySelectorAll('.pill').forEach(p => p.className = 'pill');
     statusPilih = '';
     resetNFC();
     document.getElementById('btn-hantar').disabled = true;
+    onMuridChange();
   }
 
-  // ── LOCAL STORAGE RECORDS ──
-  function saveLocalRecord(rekod) {
-    let records = JSON.parse(localStorage.getItem('hafazan_records') || '[]');
-    records.unshift(rekod);
-    if (records.length > 50) records = records.slice(0, 50);
-    localStorage.setItem('hafazan_records', JSON.stringify(records));
-  }
-
+  // ── LOCAL DISPLAY (Rekod Terakhir) ──
   function loadLastRecords() {
-    const records = JSON.parse(localStorage.getItem('hafazan_records') || '[]');
+    // Untuk paparan pantas, kita ambil 5 teratas dari studentsData yang ada last_ayat
+    const withAyat = studentsData.filter(s => s.last_ayat).slice(0, 5);
     const container = document.getElementById('last-records');
 
-    if (!records.length) {
-      container.innerHTML = '<div class="last-empty">Belum ada rekod dimuatkan</div>';
+    if (!withAyat.length) {
+      container.innerHTML = '<div class="last-empty">Belum ada rekod ayat</div>';
       return;
     }
 
-    // Show last 5
-    const html = records.slice(0, 5).map(r => {
-      const inisial = r.nama_murid ? r.nama_murid.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) : '??';
-      const badgeCls = 'badge badge-' + r.status;
-      const tarikh = r.tarikh ? new Date(r.tarikh).toLocaleString('ms-MY', {
-        day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'
-      }) : '';
+    const html = withAyat.map(r => {
+      const inisial = r.nama_murid.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
       return `
         <div class="last-row">
           <div class="last-avatar">${inisial}</div>
           <div class="last-info">
             <div class="last-name">${r.nama_murid}</div>
-            <div class="last-meta">Ayat ${r.ayat} · ${tarikh}</div>
+            <div class="last-meta">Ayat: ${r.last_ayat} · ${r.peratus || 0}%</div>
           </div>
-          <span class="${badgeCls}">${r.status}</span>
+          <span class="badge badge-lancar">${r.bintang || 0} ⭐</span>
         </div>`;
     }).join('');
-
     container.innerHTML = html;
   }
 
@@ -832,49 +659,47 @@
 
   // ── SETTINGS ──
   function openSettings() {
-    document.getElementById('inp-url').value   = config.url   || '';
-    document.getElementById('inp-key').value   = config.key   || '';
+    document.getElementById('inp-url').value = config.url || '';
+    document.getElementById('inp-key').value = config.key || '';
     document.getElementById('inp-table').value = config.table || 'hafazan_records';
     document.getElementById('overlay').classList.add('show');
   }
-
   function closeSettingsOutside(e) {
-    if (e.target === document.getElementById('overlay'))
-      document.getElementById('overlay').classList.remove('show');
+    if (e.target === document.getElementById('overlay')) document.getElementById('overlay').classList.remove('show');
   }
-
   function saveSettings() {
     config = {
-      url:   document.getElementById('inp-url').value.trim().replace(/\/$/, ''),
-      key:   document.getElementById('inp-key').value.trim(),
+      url: document.getElementById('inp-url').value.trim().replace(/\/$/, ''),
+      key: document.getElementById('inp-key').value.trim(),
       table: document.getElementById('inp-table').value.trim() || 'hafazan_records'
     };
     localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+    initSupabase();
     document.getElementById('overlay').classList.remove('show');
-    showToast('✅ Tetapan disimpan');
+    showToast('✅ Tetapan disimpan. Memuat semula data...');
+    loadStudents();
   }
 
-  // ── DAFTAR KAD (UID ↔ NAMA) ──
+  // ── DAFTAR KAD (UPDATE SUPABASE) ──
   function openRegister() {
-    const src = document.getElementById('sel-murid');
-    const dst = document.getElementById('reg-murid');
-    dst.innerHTML = '<option value="">— Pilih Murid —</option>' +
-      [...src.options].filter(o => o.value).map(o => `<option>${o.value}</option>`).join('');
     document.getElementById('reg-uid').value = '';
     document.getElementById('reg-ring').className = 'nfc-ring';
     document.getElementById('reg-overlay').classList.add('show');
   }
-
   function closeRegOutside(e) {
-    if (e.target === document.getElementById('reg-overlay'))
-      document.getElementById('reg-overlay').classList.remove('show');
+    if (e.target === document.getElementById('reg-overlay')) document.getElementById('reg-overlay').classList.remove('show');
   }
 
   async function scanRegisterNFC() {
     const ring = document.getElementById('reg-ring');
-    const inp  = document.getElementById('reg-uid');
+    const inp = document.getElementById('reg-uid');
     ring.className = 'nfc-ring scanning';
-    const fill = (uid) => { inp.value = uid; ring.className = 'nfc-ring success'; };
+    
+    const fill = (uid) => { 
+      inp.value = uid; 
+      ring.className = 'nfc-ring success'; 
+    };
+
     try {
       if ('NDEFReader' in window) {
         const reader = new NDEFReader();
@@ -890,56 +715,44 @@
     }
   }
 
-  function saveRegister() {
-    const nama = document.getElementById('reg-murid').value;
-    const uid  = document.getElementById('reg-uid').value.trim();
-    if (!nama || !uid) { showToast('⚠️ Pilih murid & scan kad dulu'); return; }
-    const idx = students.findIndex(s => s.nama_murid === nama);
-    if (idx >= 0) students[idx].nfc_uid = uid;
-    else students.push({ nama_murid: nama, nfc_uid: uid });
-    localStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
-    document.getElementById('reg-overlay').classList.remove('show');
-    renderTally();
-    showToast('✅ ' + nama + ' ↔ ' + uid);
-  }
+  async function saveRegister() {
+    const muridId = document.getElementById('reg-murid').value;
+    const uid = document.getElementById('reg-uid').value.trim();
+    
+    if (!muridId || !uid) { showToast('⚠️ Pilih murid & scan kad dulu'); return; }
 
-  // ── TALLY (kumpul rekod mengikut UID) ──
-  function renderTally() {
-    const el = document.getElementById('tally-list');
-    if (!el) return;
-    const records = JSON.parse(localStorage.getItem('hafazan_records') || '[]');
-    const cnt = {};
-    records.forEach(r => { if (r.nfc_uid) cnt[r.nfc_uid] = (cnt[r.nfc_uid] || 0) + 1; });
+    const btn = document.querySelector('#reg-overlay .btn-save');
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan...';
 
-    if (!students.length && !Object.keys(cnt).length) {
-      el.innerHTML = '<div class="last-empty">Tiada pemetaan / rekod</div>';
-      return;
+    try {
+      const { error } = await supabaseClient
+        .from(config.table)
+        .update({ nfc_id: uid })
+        .eq('id', muridId);
+
+      if (error) throw error;
+
+      // Update local state
+      const student = studentsData.find(s => s.id === muridId);
+      if (student) student.nfc_id = uid;
+
+      document.getElementById('reg-overlay').classList.remove('show');
+      showToast('✅ Kad berjaya didaftarkan ke Supabase!');
+      onMuridChange(); // Refresh hint
+    } catch (err) {
+      console.error(err);
+      showToast('❌ Gagal mendaftar: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Simpan Pemetaan ke Supabase';
     }
-
-    const mapped = new Set(students.map(s => s.nfc_uid));
-    let html = '';
-    students.forEach(s => {
-      const c = s.nfc_uid ? (cnt[s.nfc_uid] || 0) : 0;
-      const cls = s.nfc_uid ? 'badge-lancar' : 'badge-bimbingan';
-      html += `<div class="tally-row">
-        <div class="last-info"><div class="last-name">${s.nama_murid}</div><div class="last-meta">${s.nfc_uid || 'tiada kad'}</div></div>
-        <span class="badge ${cls}">${c} rekod</span></div>`;
-    });
-    Object.keys(cnt).forEach(uid => {
-      if (uid && !mapped.has(uid)) {
-        html += `<div class="tally-row">
-          <div class="last-info"><div class="last-name">❓ Kad tak dikenali</div><div class="last-meta">${uid}</div></div>
-          <span class="badge badge-bimbingan">${cnt[uid]} rekod</span></div>`;
-      }
-    });
-    el.innerHTML = html;
   }
 
   // ── INIT ──
+  loadStudents();
   loadLastRecords();
-  renderTally();
 
-  // Register SW
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
