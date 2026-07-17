@@ -738,34 +738,82 @@
   async function saveRegister() {
     const muridId = document.getElementById('reg-murid').value;
     const uid = document.getElementById('reg-uid').value.trim();
-    
-    if (!muridId || !uid) { showToast('⚠️ Pilih murid & scan kad dulu'); return; }
+
+    console.log('Register NFC:', { muridId, uid });
+
+    if (!muridId) {
+      showToast('⚠️ Sila pilih murid');
+      return;
+    }
+    if (!uid) {
+      showToast('⚠️ Sila scan atau taip UID kad');
+      return;
+    }
 
     const btn = document.querySelector('#reg-overlay .btn-save');
+    const originalText = btn.textContent;
     btn.disabled = true;
     btn.textContent = 'Menyimpan...';
 
     try {
-      const { error } = await supabaseClient
-        .from(config.table)
-        .update({ nfc_id: uid })
-        .eq('id', muridId);
+      console.log('Updating Supabase...', config.table, muridId, uid);
 
-      if (error) throw error;
+      // Semak student wujud
+      const student = studentsData.find(s => s.id === muridId);
+      if (!student) {
+        throw new Error('Murid tidak dijumpai dalam data. ID: ' + muridId);
+      }
+
+      // UPDATE database
+      const { data, error } = await supabaseClient
+        .from(config.table)
+        .update({
+          nfc_id: uid,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', muridId)
+        .select();
+
+      console.log('Supabase response:', { data, error });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error('Tiada rekod dikemaskini. Periksa ID murid.');
+      }
 
       // Update local state
-      const student = studentsData.find(s => s.id === muridId);
-      if (student) student.nfc_id = uid;
+      const localStudent = studentsData.find(s => s.id === muridId);
+      if (localStudent) {
+        localStudent.nfc_id = uid;
+      }
 
+      // Close modal
       document.getElementById('reg-overlay').classList.remove('show');
-      showToast('✅ Kad berjaya didaftarkan ke Supabase!');
-      onMuridChange(); // Refresh hint
+
+      // Refresh UI
+      onMuridChange();
+      loadLastRecords();
+
+      const studentName = student.nama_murid || 'Murid';
+      showToast(`✅ Kad berjaya didaftarkan untuk ${studentName}!`);
+
+      console.log('✅ Registration successful');
+
     } catch (err) {
-      console.error(err);
+      console.error('Registration error:', err);
       showToast('❌ Gagal mendaftar: ' + err.message);
+
+      // Show detailed error in console
+      if (err.details) {
+        console.error('Details:', err.details);
+      }
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Simpan Pemetaan ke Supabase';
+      btn.textContent = originalText;
     }
   }
 
