@@ -390,7 +390,13 @@
       studentsData.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.id; 
-        opt.textContent = `${s.nama_murid} (${s.kelas || 'Tiada Kelas'})`;
+        
+        // ─── VERSI 1: Potong selepas 30 aksara ───
+        const displayName = s.nama_murid.length > 30 
+          ? s.nama_murid.substring(0, 30) + '...' 
+          : s.nama_murid;
+        opt.textContent = displayName;
+        
         opt.dataset.nama = s.nama_murid;
         sel.appendChild(opt);
 
