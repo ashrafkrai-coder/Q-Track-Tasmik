@@ -595,6 +595,22 @@
       student.peratus = newPeratus;
       student.bintang = newBintang;
 
+      // Simpan ke localStorage supaya kad "Rekod Ayat Terakhir" sentiasa papar
+      const rec = {
+        nama_murid: student.nama_murid,
+        last_ayat: ayat,
+        peratus: newPeratus,
+        bintang: newBintang,
+        status: statusPilih,
+        nfc_uid: nfcUID,
+        tarikh: new Date().toISOString()
+      };
+      try {
+        const arr = JSON.parse(localStorage.getItem('hafazan_records') || '[]');
+        arr.unshift(rec);
+        localStorage.setItem('hafazan_records', JSON.stringify(arr.slice(0, 50)));
+      } catch (e) {}
+
       showToast(`✅ Rekod berjaya! (+1 ⭐ jika Lancar)`);
       loadLastRecords();
       resetForm();
@@ -618,16 +634,36 @@
   }
 
   function loadLastRecords() {
-    const withAyat = studentsData.filter(s => s.last_ayat).slice(0, 5);
-    const container = document.getElementById('last-records');
+    let records;
+    try {
+      records = JSON.parse(localStorage.getItem('hafazan_records') || '[]');
+    } catch (e) { records = []; }
 
-    if (!withAyat.length) {
-      container.innerHTML = '<div class="last-empty">Belum ada rekod ayat</div>';
+    if (!records.length) {
+      // Fallback: guna studentsData kalau ada last_ayat
+      const withAyat = studentsData.filter(s => s.last_ayat).slice(0, 5);
+      const container = document.getElementById('last-records');
+      if (!withAyat.length) {
+        container.innerHTML = '<div class="last-empty">Belum ada rekod ayat</div>';
+        return;
+      }
+      renderLastRecords(withAyat.map(s => ({
+        nama_murid: s.nama_murid, last_ayat: s.last_ayat,
+        peratus: s.peratus, bintang: s.bintang
+      })));
       return;
     }
 
-    const html = withAyat.map(r => {
-      const inisial = r.nama_murid.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    renderLastRecords(records.slice(0, 5));
+  }
+
+  function renderLastRecords(list) {
+    const container = document.getElementById('last-records');
+    const html = list.map(r => {
+      const inisial = (r.nama_murid || '??').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+      const statusBadge = r.status
+        ? `<span class="badge badge-${r.status}">${r.status}</span>`
+        : `<span class="badge badge-lancar">${r.bintang || 0} ⭐</span>`;
       return `
         <div class="last-row">
           <div class="last-avatar">${inisial}</div>
@@ -635,7 +671,7 @@
             <div class="last-name">${r.nama_murid}</div>
             <div class="last-meta">Ayat: ${r.last_ayat} · ${r.peratus || 0}%</div>
           </div>
-          <span class="badge badge-lancar">${r.bintang || 0} ⭐</span>
+          ${statusBadge}
         </div>`;
     }).join('');
     container.innerHTML = html;
