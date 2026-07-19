@@ -244,12 +244,12 @@
       <div class="select-wrap">
         <select id="sel-ayat" disabled>
           <option value="">— Pilih Ayat —</option>
-          <option value="1-5">Ayat 1 – 5</option>
-          <option value="6-10">Ayat 6 – 10</option>
-          <option value="11-15">Ayat 11 – 15</option>
-          <option value="16-20">Ayat 16 – 20</option>
-          <option value="21-25">Ayat 21 – 25</option>
-          <option value="26-30">Ayat 26 – 30</option>
+          <option value="1-5" data-block="1">Ayat 1 – 5</option>
+          <option value="6-10" data-block="2">Ayat 6 – 10</option>
+          <option value="11-15" data-block="3">Ayat 11 – 15</option>
+          <option value="16-20" data-block="4">Ayat 16 – 20</option>
+          <option value="21-25" data-block="5">Ayat 21 – 25</option>
+          <option value="26-30" data-block="6">Ayat 26 – 30</option>
         </select>
       </div>
     </div>
@@ -372,7 +372,7 @@
     try {
       const { data, error } = await supabaseClient
         .from(config.table)
-        .select('id, nama_murid, kelas, last_ayat, nfc_id, peratus, bintang')
+        .select('id, nama_murid, kelas, last_ayat, nfc_id, peratus, bintang, lulus_block')
         .order('nama_murid', { ascending: true });
 
       if (error) throw error;
@@ -422,6 +422,28 @@
     checkReady();
   }
 
+  // ── HELPERS: Progression ayat (6 blok: 1-5,6-10,...,26-30) ──
+  const TOTAL_BLOCKS = 6;
+  function ayatBlock(value) {
+    const opt = [...document.getElementById('sel-ayat').options]
+      .find(o => o.value === value);
+    return opt ? parseInt(opt.dataset.block || '0', 10) : 0;
+  }
+  function nextAllowedBlock(student) {
+    const lulus = parseInt(student && student.lulus_block ? student.lulus_block : '0', 10) || 0;
+    return Math.min(TOTAL_BLOCKS, lulus + 1);
+  }
+  function updateAyatLock(student) {
+    const sel = document.getElementById('sel-ayat');
+    const allowed = nextAllowedBlock(student);
+    [...sel.options].forEach(o => {
+      if (!o.value) return;
+      const b = parseInt(o.dataset.block || '0', 10);
+      o.disabled = b !== allowed;
+    });
+    sel.value = '';
+  }
+
   function checkReady() {
     const muridId = document.getElementById('sel-murid').value;
     const ayat = document.getElementById('sel-ayat').value;
@@ -440,8 +462,11 @@
     const s = studentsData.find(x => String(x.id) === String(muridId));
     
     if (s) {
+      updateAyatLock(s);
+      const blok = parseInt(s.lulus_block || '0', 10) || 0;
+      const blokAyat = ['', '1-5','6-10','11-15','16-20','21-25','26-30'][blok];
       if (s.nfc_id) {
-        hint.textContent = `Kad berdaftar: ${s.nfc_id} | Peratus: ${s.peratus || 0}%`;
+        hint.textContent = `Kad: ${s.nfc_id} | Blok: ${blokAyat} | Bintang: ${blok} | ${s.peratus || 0}%`;
         hint.className = 'nfc-hint ok';
         hint.style.display = 'block';
       } else {
@@ -573,13 +598,20 @@
     btn.disabled = true;
     btn.textContent = 'Menghantar…';
 
-    let newBintang = student.bintang || 0;
-    let newPeratus = student.peratus || 0;
+    const block = ayatBlock(ayat); // 1..6
+
+    let newBintang = 0;
+    let newPeratus = 0;
+    let newLulusBlock = parseInt(student.lulus_block || '0', 10) || 0;
 
     if (statusPilih === 'lancar') {
-      newBintang += 1;
-      newPeratus = Math.min(100, newPeratus + 2);
+      newLulusBlock = Math.max(newLulusBlock, block);
+    } else {
+      newLulusBlock = Math.max(newLulusBlock, block - 1);
     }
+
+    newBintang = newLulusBlock;
+    newPeratus = Math.round((newLulusBlock / TOTAL_BLOCKS) * 100);
 
     try {
       const { data, error } = await supabaseClient
@@ -588,7 +620,8 @@
           last_ayat: ayat,
           nfc_id: nfcUID,
           peratus: newPeratus,
-          bintang: newBintang
+          bintang: newBintang,
+          lulus_block: newLulusBlock
         })
         .eq('id', muridId)
         .select();
@@ -606,6 +639,7 @@
       student.nfc_id = nfcUID;
       student.peratus = newPeratus;
       student.bintang = newBintang;
+      student.lulus_block = newLulusBlock;
 
       // Simpan ke localStorage supaya kad "Rekod Ayat Terakhir" sentiasa papar
       const rec = {
@@ -613,6 +647,7 @@
         last_ayat: ayat,
         peratus: newPeratus,
         bintang: newBintang,
+        lulus_block: newLulusBlock,
         status: statusPilih,
         nfc_uid: nfcUID,
         tarikh: new Date().toISOString()
