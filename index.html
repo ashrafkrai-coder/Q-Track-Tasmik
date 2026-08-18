@@ -63,16 +63,16 @@
     }
     .select-row:last-child { border-bottom: none; }
     .select-label {
-      font-size: 15px; font-weight: 500; color: var(--grey-900); flex: 0 0 100px;
+      font-size: 16px; font-weight: 500; color: var(--grey-900); flex: 0 0 100px;
     }
     .select-wrap { flex: 1; position: relative; }
     .select-wrap select {
       width: 100%; border: none; outline: none; background: transparent;
-      font-size: 13px; color: var(--emerald); font-weight: 600; font-family: inherit;
+      font-size: 14px; color: var(--emerald); font-weight: 600; font-family: inherit;
       padding: 12px 28px 12px 0; appearance: none; -webkit-appearance: none;
       cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .select-wrap select option { font-size: 10px; }
+    .select-wrap select option { font-size: 12px; }
     .select-wrap::after {
       content: '›'; position: absolute; right: 0; top: 50%;
       transform: translateY(-50%) rotate(90deg); color: var(--grey-400);
@@ -81,9 +81,9 @@
     
     /* ── COMPACT MODE (MOBILE) ── */
     @media (max-width: 480px) {
-      .select-wrap select { font-size: 11px !important; padding: 6px 28px 6px 0 !important; }
-      .select-wrap select option { font-size: 9px !important; }
-      .select-label { font-size: 12px !important; flex: 0 0 80px !important; }
+      .select-wrap select { font-size: 13px !important; padding: 6px 28px 6px 0 !important; }
+      .select-wrap select option { font-size: 12px !important; }
+      .select-label { font-size: 14px !important; flex: 0 0 80px !important; }
       .select-row { min-height: 36px !important; padding: 0 12px !important; }
     }
 
