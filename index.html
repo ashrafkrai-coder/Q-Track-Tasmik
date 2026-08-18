@@ -92,10 +92,13 @@
     .status-pills { display: flex; gap: 8px; flex-wrap: wrap; }
     .pill {
       flex: 1; min-width: 80px; border: 1.5px solid var(--grey-200);
-      border-radius: var(--radius-pill); padding: 10px 6px; text-align: center;
+      border-radius: 12px; min-height: 78px; padding: 10px 6px; text-align: center;
       font-size: 13px; font-weight: 600; color: var(--grey-600);
       cursor: pointer; transition: all .18s ease; background: var(--white);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
     }
+    .pill-icon { font-size: 21px; line-height: 1; }
+    .pill-text { line-height: 1.1; }
     .pill.active-lancar { background: #E8F8ED; border-color: var(--green); color: #1B7A3A; }
     .pill.active-ulang { background: #FFF6E0; border-color: var(--gold); color: #8A6200; }
     .pill.active-bimbingan { background: #FFEEED; border-color: var(--red); color: #C0271F; }
@@ -261,9 +264,9 @@
     <div class="card-header">Status Bacaan</div>
     <div class="card-body">
       <div class="status-pills">
-        <div class="pill" data-val="lancar" onclick="pilihStatus(this)">✅ Lancar</div>
-        <div class="pill" data-val="ulang" onclick="pilihStatus(this)">🔄 Ulang</div>
-        <div class="pill" data-val="bimbingan" onclick="pilihStatus(this)">📌 Bimbingan</div>
+        <div class="pill" data-val="lancar" onclick="pilihStatus(this)"><span class="pill-icon" aria-hidden="true">&#x2705;</span><span class="pill-text">Lancar</span></div>
+        <div class="pill" data-val="ulang" onclick="pilihStatus(this)"><span class="pill-icon" aria-hidden="true">&#x1F504;</span><span class="pill-text">Ulang</span></div>
+        <div class="pill" data-val="bimbingan" onclick="pilihStatus(this)"><span class="pill-icon" aria-hidden="true">&#x1F4CC;</span><span class="pill-text">Bimbingan</span></div>
       </div>
     </div>
   </div>
